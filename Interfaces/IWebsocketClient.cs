@@ -1,16 +1,17 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Net.WebSockets;
 using TwitchLib.WebSocket.Events;
 
 namespace TwitchLib.WebSocket
 {
-    public interface IWebsocketClient
+    public interface IWebSocketClient
     {
-        [EditorBrowsable(EditorBrowsableState.Never)]
+        /// <inheritdoc />
         TimeSpan DefaultKeepAliveInterval { get; set; }
         /// <inheritdoc />
         int SendQueueLength { get; }
+        /// <inheritdoc />
+        int WhisperQueueLength { get; }
         /// <inheritdoc />
         WebSocketState State { get; }
         /// <inheritdoc />
@@ -26,12 +27,14 @@ namespace TwitchLib.WebSocket
         /// <inheritdoc />
         event EventHandler<OnMessageEventArgs> OnMessage;
         /// <inheritdoc />
+        event EventHandler<OnMessageThrottledEventArgs> OnMessageThrottled;
+        /// <inheritdoc />
+        event EventHandler<OnWhisperThrottledEventArgs> OnWhisperThrottled;
+        /// <inheritdoc />
         event EventHandler<OnSendFailedEventArgs> OnSendFailed;
         /// <inheritdoc />
         event EventHandler<OnStateChangedEventArgs> OnStateChanged;
-        /// <inheritdoc />
-        event EventHandler<OnMessageThrottledEventArgs> OnMessageThrottled;
-        /// <inheritdoc />
+          /// <inheritdoc />
         void Close();
         /// <inheritdoc />
         void Dispose();
@@ -43,5 +46,9 @@ namespace TwitchLib.WebSocket
         bool Send(byte[] data);
         /// <inheritdoc />
         bool Send(string data);
+        /// <inheritdoc />
+        bool SendWhisper(string data);
+        /// <inheritdoc />
+        bool SendWhisper(byte[] data);
     }
 }

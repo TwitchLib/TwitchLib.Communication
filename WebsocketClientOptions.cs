@@ -56,5 +56,20 @@ namespace TwitchLib.WebSocket
         /// Number of Messages Allowed Per Instance of the Throttling Period. (default 100)
         /// </summary>
         public int MessagesAllowedInPeriod { get; set; } = 100;
+
+        /// <summary>
+        /// Period Between each reset of the whisper throttling instance window. (default 60s)
+        /// </summary>
+        public TimeSpan WhisperThrottlingPeriod { get; set; } = TimeSpan.FromSeconds(60);
+
+        /// <summary>
+        /// Number of Whispers Allowed to be sent Per Instance of the Throttling Period. (default 100)
+        /// </summary>
+        public int WhispersAllowedInPeriod { get; set; } = 100;
+
+        /// <summary>
+        /// Maximum number of Queued outgoing Whispers (default 10000).
+        /// </summary>
+        public int WhisperQueueCapacity { get; set; } = 10000;
     }
 }

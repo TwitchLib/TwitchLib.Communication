@@ -12,24 +12,30 @@ using TwitchLib.WebSocket.Events;
 
 namespace TwitchLib.WebSocket
 {
-    public class WebSocketClient : IWebsocketClient, IDisposable
+    public class WebSocketClient : IWebSocketClient, IDisposable
     {
         private string Url { get; }
         private ClientWebSocket _ws;
         private readonly IWebsocketClientOptions _options;
         private readonly BlockingCollection<Tuple<DateTime, string>> _sendQueue = new BlockingCollection<Tuple<DateTime, string>>();
+        private readonly BlockingCollection<Tuple<DateTime, string>> _whisperQueue = new BlockingCollection<Tuple<DateTime, string>>();
         private bool _disconnectCalled;
         private bool _listenerRunning;
         private bool _senderRunning;
+        private bool _whisperSenderRunning;
         private bool _monitorRunning;
         private bool _reconnecting;
         private bool _resetThrottlerRunning;
+        private bool _resetWhisperThrottlerRunning;
         private int _sentCount = 0;
+        private int _whispersSent = 0;
         private CancellationTokenSource _tokenSource = new CancellationTokenSource();
         private Task _monitor;
         private Task _listener;
         private Task _sender;
+        private Task _whisperSender;
         private Task _resetThrottler;
+        private Task _resetWhisperThrottler;
 
         /// <summary>
         /// The current state of the connection.
@@ -40,6 +46,11 @@ namespace TwitchLib.WebSocket
         /// The current number of items waiting to be sent.
         /// </summary>
         public int SendQueueLength => _sendQueue.Count;
+
+        /// <summary>
+        /// The current number of Whispers waiting to be sent.
+        /// </summary>
+        public int WhisperQueueLength => _whisperQueue.Count;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public TimeSpan DefaultKeepAliveInterval
@@ -93,11 +104,16 @@ namespace TwitchLib.WebSocket
         /// Fires when a Message has been throttled.
         /// </summary>
         public event EventHandler<OnMessageThrottledEventArgs> OnMessageThrottled;
+
+        /// <summary>
+        /// Fires when a Whisper has been throttled.
+        /// </summary>
+        public event EventHandler<OnWhisperThrottledEventArgs> OnWhisperThrottled;
         #endregion
 
-        public WebSocketClient(IWebsocketClientOptions options)
+        public WebSocketClient(IWebsocketClientOptions options = null)
         {
-            _options = options;
+            _options = options ?? new WebSocketClientOptions();
 
             switch (options.ClientType)
             {
@@ -116,6 +132,11 @@ namespace TwitchLib.WebSocket
         private void IncrementSentCount()
         {
             Interlocked.Increment(ref _sentCount);
+        }
+
+        private void IncrementWhisperCount()
+        {
+            Interlocked.Increment(ref _whispersSent);
         }
 
         private void InitializeClient()
@@ -148,7 +169,9 @@ namespace TwitchLib.WebSocket
                 _ws.ConnectAsync(new Uri(Url), _tokenSource.Token).Wait(15000);
                 StartListener();
                 StartSender();
+                StartWhisperSender();
                 StartThrottlingWindowReset();
+                StartWhisperThrottlingWindowReset();
 
                 Task.Run(() =>
                 {
@@ -193,6 +216,34 @@ namespace TwitchLib.WebSocket
         }
 
         /// <summary>
+        /// Queue a Whisper to Send to the server as a String.
+        /// </summary>
+        /// <param name="data">The Whisper To Queue</param>
+        /// <returns>Returns True if was successfully queued. False if it fails.</returns>
+        public bool SendWhisper(string data)
+        {
+            try
+            {
+                if (State != WebSocketState.Open || WhisperQueueLength >= _options.WhisperQueueCapacity)
+                {
+                    return false;
+                }
+
+                Task.Run(() =>
+                {
+                    _whisperQueue.Add(new Tuple<DateTime, string>(DateTime.UtcNow, data));
+                }).Wait(100, _tokenSource.Token);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                OnError?.Invoke(this, new OnErrorEventArgs { Exception = ex });
+                throw;
+            }
+        }
+
+        /// <summary>
         /// Queue a Message to Send to the server as a ByteArray.
         /// </summary>
         /// <param name="data">The Message To Queue</param>
@@ -200,6 +251,16 @@ namespace TwitchLib.WebSocket
         public bool Send(byte[] data)
         {
             return Send(Encoding.UTF8.GetString(data));
+        }
+
+        /// <summary>
+        /// Queue a Whisper to Send to the server as a ByteArray.
+        /// </summary>
+        /// <param name="data">The Message To Queue</param>
+        /// <returns>Returns True if was successfully queued. False if it fails.</returns>
+        public bool SendWhisper(byte[] data)
+        {
+            return SendWhisper(Encoding.UTF8.GetString(data));
         }
 
         private void StartMonitor()
@@ -254,7 +315,7 @@ namespace TwitchLib.WebSocket
             {
                 _tokenSource.Cancel();
                 _reconnecting = true;
-                if (!Task.WaitAll(new[] {_monitor, _listener, _sender}, 15000))
+                if (!Task.WaitAll(new[] {_monitor, _listener, _sender, _whisperSender, _resetThrottler, _resetWhisperThrottler}, 15000))
                 {
                     OnFatality?.Invoke(this, new OnFatalErrorEventArgs { Reason = "Fatal network error. Network services fail to shut down." });
                     _reconnecting = false;
@@ -302,8 +363,12 @@ namespace TwitchLib.WebSocket
                         StartListener();
                     if (!_senderRunning)
                         StartSender();
+                    if (!_whisperSenderRunning)
+                        StartWhisperSender();
                     if (!_resetThrottlerRunning)
                         StartThrottlingWindowReset();
+                    if (!_resetWhisperThrottlerRunning)
+                        StartWhisperThrottlingWindowReset();
                 }
             });
         }
@@ -438,6 +503,62 @@ namespace TwitchLib.WebSocket
             });
         }
 
+        private void StartWhisperSender()
+        {
+            _whisperSender = Task.Run(async () =>
+            {
+                _whisperSenderRunning = true;
+                try
+                {
+                    while (!_disposedValue && !_reconnecting)
+                    {
+                        await Task.Delay(_options.SendDelay);
+
+                        if (_whispersSent == _options.WhispersAllowedInPeriod)
+                        {
+                            OnWhisperThrottled?.Invoke(this, new OnWhisperThrottledEventArgs
+                            {
+                                Message = "Whisper Throttle Occured. Too Many Whispers within the period specified in WebsocketClientOptions.",
+                                AllowedInPeriod = _options.WhispersAllowedInPeriod,
+                                Period = _options.WhisperThrottlingPeriod,
+                                SentWhisperCount = Interlocked.CompareExchange(ref _whispersSent, 0, 0)
+                            });
+
+                            continue;
+                        }
+
+                        if (_ws.State == WebSocketState.Open && !_reconnecting)
+                        {
+                            var msg = _whisperQueue.Take(_tokenSource.Token);
+                            if (msg.Item1.Add(_options.SendCacheItemTimeout) < DateTime.UtcNow)
+                            {
+                                continue;
+                            }
+                            var buffer = Encoding.UTF8.GetBytes(msg.Item2);
+                            try
+                            {
+                                await _ws.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, _tokenSource.Token);
+                                IncrementWhisperCount();
+                            }
+                            catch (Exception ex)
+                            {
+                                OnSendFailed?.Invoke(this, new OnSendFailedEventArgs { Data = msg.Item2, Exception = ex });
+                                _ws.Abort();
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    OnSendFailed?.Invoke(this, new OnSendFailedEventArgs { Data = "", Exception = ex });
+                    OnError?.Invoke(this, new OnErrorEventArgs { Exception = ex });
+                }
+                _whisperSenderRunning = false;
+                return Task.CompletedTask;
+            });
+        }
+
         private void StartThrottlingWindowReset()
         {
             _resetThrottler = Task.Run(async () => {
@@ -448,6 +569,20 @@ namespace TwitchLib.WebSocket
                     await Task.Delay(_options.ThrottlingPeriod);
                 }
                 _resetThrottlerRunning = false;
+                return Task.CompletedTask;
+            });
+        }
+
+        private void StartWhisperThrottlingWindowReset()
+        {
+            _resetThrottler = Task.Run(async () => {
+                _resetWhisperThrottlerRunning = true;
+                while (!_disposedValue && !_reconnecting)
+                {
+                    Interlocked.Exchange(ref _whispersSent, 0);
+                    await Task.Delay(_options.ThrottlingPeriod);
+                }
+                _resetWhisperThrottlerRunning = false;
                 return Task.CompletedTask;
             });
         }
@@ -484,6 +619,17 @@ namespace TwitchLib.WebSocket
                             i++;
                             Task.Delay(1000).Wait();
                             if(i > 25)
+                                break;
+                        }
+                    }
+                    if (_whisperQueue.Count > 0 && _whisperSenderRunning)
+                    {
+                        var i = 0;
+                        while (_whisperQueue.Count > 0 && _whisperSenderRunning)
+                        {
+                            i++;
+                            Task.Delay(1000).Wait();
+                            if (i > 25)
                                 break;
                         }
                     }

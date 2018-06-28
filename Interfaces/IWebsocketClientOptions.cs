@@ -26,5 +26,11 @@ namespace TwitchLib.WebSocket
         TimeSpan ThrottlingPeriod { get; set; }
         /// <inheritdoc />
         bool UseWSS { get; set; }
+        /// <inheritdoc />
+        TimeSpan WhisperThrottlingPeriod { get; set; }
+        /// <inheritdoc />
+        int WhispersAllowedInPeriod { get; set; }
+        /// <inheritdoc />
+        int WhisperQueueCapacity { get; set; }
     }
 }

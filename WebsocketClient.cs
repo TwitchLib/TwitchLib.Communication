@@ -115,13 +115,13 @@ namespace TwitchLib.WebSocket
         {
             _options = options ?? new WebSocketClientOptions();
 
-            switch (options.ClientType)
+            switch (_options.ClientType)
             {
                 case ClientType.Chat:
-                    Url = options.UseWSS ? "wss://irc-ws.chat.twitch.tv:443" : "ws://irc-ws.chat.twitch.tv:80";
+                    Url = _options.UseWSS ? "wss://irc-ws.chat.twitch.tv:443" : "ws://irc-ws.chat.twitch.tv:80";
                     break;
                 case ClientType.PubSub:
-                    Url = options.UseWSS ? "wss://pubsub-edge.twitch.tv:443" : "ws://pubsub-edge.twitch.tv:80";
+                    Url = _options.UseWSS ? "wss://pubsub-edge.twitch.tv:443" : "ws://pubsub-edge.twitch.tv:80";
                     break;
             }
 

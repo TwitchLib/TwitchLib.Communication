@@ -7,50 +7,43 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TwitchLib.WebSocket.Enums;
-using TwitchLib.WebSocket.Events;
+using TwitchLib.Communication.Enums;
+using TwitchLib.Communication.Events;
 
-namespace TwitchLib.WebSocket
+namespace TwitchLib.Communication
 {
-    public class WebSocketClient : IWebSocketClient, IDisposable
+    public class WebSocketClient : IClient, IDisposable
     {
         private string Url { get; }
         private ClientWebSocket _ws;
-        private readonly IWebsocketClientOptions _options;
-        private readonly BlockingCollection<Tuple<DateTime, string>> _sendQueue = new BlockingCollection<Tuple<DateTime, string>>();
-        private readonly BlockingCollection<Tuple<DateTime, string>> _whisperQueue = new BlockingCollection<Tuple<DateTime, string>>();
+        private readonly IClientOptions _options;
         private bool _disconnectCalled;
         private bool _listenerRunning;
         private bool _senderRunning;
         private bool _whisperSenderRunning;
         private bool _monitorRunning;
         private bool _reconnecting;
-        private bool _resetThrottlerRunning;
-        private bool _resetWhisperThrottlerRunning;
-        private int _sentCount = 0;
-        private int _whispersSent = 0;
         private CancellationTokenSource _tokenSource = new CancellationTokenSource();
         private Task _monitor;
         private Task _listener;
         private Task _sender;
         private Task _whisperSender;
-        private Task _resetThrottler;
-        private Task _resetWhisperThrottler;
+        private Throttlers _throttlers;
 
         /// <summary>
         /// The current state of the connection.
         /// </summary>
-        public WebSocketState State => _ws.State;
+        public bool IsConnected => _ws == null ? false : _ws.State == WebSocketState.Open;
 
         /// <summary>
         /// The current number of items waiting to be sent.
         /// </summary>
-        public int SendQueueLength => _sendQueue.Count;
+        public int SendQueueLength => _throttlers.SendQueue.Count;
 
         /// <summary>
         /// The current number of Whispers waiting to be sent.
         /// </summary>
-        public int WhisperQueueLength => _whisperQueue.Count;
+        public int WhisperQueueLength => _throttlers.WhisperQueue.Count;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public TimeSpan DefaultKeepAliveInterval
@@ -111,32 +104,23 @@ namespace TwitchLib.WebSocket
         public event EventHandler<OnWhisperThrottledEventArgs> OnWhisperThrottled;
         #endregion
 
-        public WebSocketClient(IWebsocketClientOptions options = null)
+        public WebSocketClient(IClientOptions options = null)
         {
-            _options = options ?? new WebSocketClientOptions();
+            _options = options ?? new ClientOptions();
 
             switch (_options.ClientType)
             {
                 case ClientType.Chat:
-                    Url = _options.UseWSS ? "wss://irc-ws.chat.twitch.tv:443" : "ws://irc-ws.chat.twitch.tv:80";
+                    Url = _options.UseSSL ? "wss://irc-ws.chat.twitch.tv:443" : "ws://irc-ws.chat.twitch.tv:80";
                     break;
                 case ClientType.PubSub:
-                    Url = _options.UseWSS ? "wss://pubsub-edge.twitch.tv:443" : "ws://pubsub-edge.twitch.tv:80";
+                    Url = _options.UseSSL ? "wss://pubsub-edge.twitch.tv:443" : "ws://pubsub-edge.twitch.tv:80";
                     break;
             }
+            _throttlers = new Throttlers(_options.ThrottlingPeriod, _options.WhisperThrottlingPeriod);
 
             InitializeClient();
             StartMonitor();
-        }
-
-        private void IncrementSentCount()
-        {
-            Interlocked.Increment(ref _sentCount);
-        }
-
-        private void IncrementWhisperCount()
-        {
-            Interlocked.Increment(ref _whispersSent);
         }
 
         private void InitializeClient()
@@ -170,8 +154,8 @@ namespace TwitchLib.WebSocket
                 StartListener();
                 StartSender();
                 StartWhisperSender();
-                StartThrottlingWindowReset();
-                StartWhisperThrottlingWindowReset();
+                _throttlers.StartThrottlingWindowReset();
+                _throttlers.StartWhisperThrottlingWindowReset();
 
                 Task.Run(() =>
                 {
@@ -196,14 +180,14 @@ namespace TwitchLib.WebSocket
         {
             try
             {
-                if (State != WebSocketState.Open || SendQueueLength >= _options.SendQueueCapacity)
+                if (!IsConnected || SendQueueLength >= _options.SendQueueCapacity)
                 {
                     return false;
                 }
 
                 Task.Run(() =>
                 {
-                    _sendQueue.Add(new Tuple<DateTime, string>(DateTime.UtcNow, data));
+                    _throttlers.SendQueue.Add(new Tuple<DateTime, string>(DateTime.UtcNow, data));
                 }).Wait(100, _tokenSource.Token);
 
                 return true;
@@ -224,14 +208,14 @@ namespace TwitchLib.WebSocket
         {
             try
             {
-                if (State != WebSocketState.Open || WhisperQueueLength >= _options.WhisperQueueCapacity)
+                if (!IsConnected || WhisperQueueLength >= _options.WhisperQueueCapacity)
                 {
                     return false;
                 }
 
                 Task.Run(() =>
                 {
-                    _whisperQueue.Add(new Tuple<DateTime, string>(DateTime.UtcNow, data));
+                    _throttlers.WhisperQueue.Add(new Tuple<DateTime, string>(DateTime.UtcNow, data));
                 }).Wait(100, _tokenSource.Token);
 
                 return true;
@@ -243,26 +227,6 @@ namespace TwitchLib.WebSocket
             }
         }
 
-        /// <summary>
-        /// Queue a Message to Send to the server as a ByteArray.
-        /// </summary>
-        /// <param name="data">The Message To Queue</param>
-        /// <returns>Returns True if was successfully queued. False if it fails.</returns>
-        public bool Send(byte[] data)
-        {
-            return Send(Encoding.UTF8.GetString(data));
-        }
-
-        /// <summary>
-        /// Queue a Whisper to Send to the server as a ByteArray.
-        /// </summary>
-        /// <param name="data">The Message To Queue</param>
-        /// <returns>Returns True if was successfully queued. False if it fails.</returns>
-        public bool SendWhisper(byte[] data)
-        {
-            return SendWhisper(Encoding.UTF8.GetString(data));
-        }
-
         private void StartMonitor()
         {
             _monitor = Task.Run(() =>
@@ -271,32 +235,32 @@ namespace TwitchLib.WebSocket
                 var needsReconnect = false;
                 try
                 {
-                    var lastState = State;
+                    var lastState = _ws.State == WebSocketState.Open ? true : false;
                     while (_ws != null && !_disposedValue)
                     {
-                        if (lastState == State)
+                        if (lastState == (_ws.State == WebSocketState.Open ? true : false))
                         {
                             Thread.Sleep(200);
                             continue;
                         }
-                        OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { NewState = State, PreviousState = lastState});
+                        OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = _ws.State == WebSocketState.Open, WasConnected = lastState});
 
-                        if (State == WebSocketState.Open)
+                        if (_ws.State == WebSocketState.Open)
                             OnConnected?.Invoke(this, new OnConnectedEventArgs());
 
-                        if ((State == WebSocketState.Closed || State == WebSocketState.Aborted) && !_reconnecting)
+                        if ((_ws.State == WebSocketState.Closed || _ws.State == WebSocketState.Aborted) && !_reconnecting)
                         {
-                            if (lastState == WebSocketState.Open && !_disconnectCalled && _options.ReconnectionPolicy != null && !_options.ReconnectionPolicy.AreAttemptsComplete())
+                            if (lastState && !_disconnectCalled && _options.ReconnectionPolicy != null && !_options.ReconnectionPolicy.AreAttemptsComplete())
                             {
                                 needsReconnect = true;
                                 break;
                             }
-                            OnDisconnected?.Invoke(this, new OnDisconnectedEventArgs { Reason = _ws.CloseStatus ?? WebSocketCloseStatus.Empty });
+                            OnDisconnected?.Invoke(this, new OnDisconnectedEventArgs());
                             if (_ws.CloseStatus != null && _ws.CloseStatus != WebSocketCloseStatus.NormalClosure)
                                 OnError?.Invoke(this, new OnErrorEventArgs { Exception = new Exception(_ws.CloseStatus + " " + _ws.CloseStatusDescription) });
                         }
 
-                        lastState = State;
+                        lastState = _ws.State == WebSocketState.Open ? true : false;
                     }
                 }
                 catch (Exception ex)
@@ -315,17 +279,19 @@ namespace TwitchLib.WebSocket
             {
                 _tokenSource.Cancel();
                 _reconnecting = true;
-                if (!Task.WaitAll(new[] {_monitor, _listener, _sender, _whisperSender, _resetThrottler, _resetWhisperThrottler}, 15000))
+                _throttlers.Reconnecting = true;
+                if (!Task.WaitAll(new[] {_monitor, _listener, _sender, _whisperSender, _throttlers.ResetThrottler, _throttlers.ResetWhisperThrottler }, 15000))
                 {
                     OnFatality?.Invoke(this, new OnFatalErrorEventArgs { Reason = "Fatal network error. Network services fail to shut down." });
                     _reconnecting = false;
+                    _throttlers.Reconnecting = false;
                     _disconnectCalled = true;
                     _tokenSource.Cancel();
                     return;
                 }
                 _ws.Dispose();
 
-                OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { NewState = WebSocketState.Connecting, PreviousState = WebSocketState.Aborted });
+                OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = false, WasConnected = false });
 
                 _tokenSource = new CancellationTokenSource();
 
@@ -349,6 +315,7 @@ namespace TwitchLib.WebSocket
                         {
                             OnFatality?.Invoke(this, new OnFatalErrorEventArgs { Reason = "Fatal network error. Max reconnect attemps reached." });
                             _reconnecting = false;
+                            _throttlers.Reconnecting = false;
                             _disconnectCalled = true;
                             _tokenSource.Cancel();
                             return;
@@ -357,6 +324,7 @@ namespace TwitchLib.WebSocket
                 if (connected)
                 {
                     _reconnecting = false;
+                    _throttlers.Reconnecting = false;
                     if (!_monitorRunning)
                         StartMonitor();
                     if (!_listenerRunning)
@@ -365,10 +333,10 @@ namespace TwitchLib.WebSocket
                         StartSender();
                     if (!_whisperSenderRunning)
                         StartWhisperSender();
-                    if (!_resetThrottlerRunning)
-                        StartThrottlingWindowReset();
-                    if (!_resetWhisperThrottlerRunning)
-                        StartWhisperThrottlingWindowReset();
+                    if (!_throttlers.ResetThrottlerRunning)
+                        _throttlers.StartThrottlingWindowReset();
+                    if (_throttlers.ResetWhisperThrottlerRunning)
+                        _throttlers.StartWhisperThrottlingWindowReset();
                 }
             });
         }
@@ -458,14 +426,14 @@ namespace TwitchLib.WebSocket
                     {
                         await Task.Delay(_options.SendDelay);
 
-                        if (_sentCount == _options.MessagesAllowedInPeriod)
+                        if (_throttlers.SentCount == _options.MessagesAllowedInPeriod)
                         {
                             OnMessageThrottled?.Invoke(this, new OnMessageThrottledEventArgs
                             {
                                 Message = "Message Throttle Occured. Too Many Messages within the period specified in WebsocketClientOptions.",
                                 AllowedInPeriod = _options.MessagesAllowedInPeriod,
                                 Period = _options.ThrottlingPeriod,
-                                SentMessageCount = Interlocked.CompareExchange(ref _sentCount, 0, 0)
+                                SentMessageCount = Interlocked.CompareExchange(ref _throttlers.SentCount, 0, 0)
                             });
 
                             continue;
@@ -473,7 +441,7 @@ namespace TwitchLib.WebSocket
 
                         if (_ws.State == WebSocketState.Open && !_reconnecting)
                         {
-                            var msg = _sendQueue.Take(_tokenSource.Token);
+                            var msg = _throttlers.SendQueue.Take(_tokenSource.Token);
                             if (msg.Item1.Add(_options.SendCacheItemTimeout) < DateTime.UtcNow)
                             {
                                 continue;
@@ -482,7 +450,7 @@ namespace TwitchLib.WebSocket
                             try
                             {
                                 await _ws.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, _tokenSource.Token);
-                                IncrementSentCount();
+                                _throttlers.IncrementSentCount();
                             }
                             catch (Exception ex)
                             {
@@ -514,14 +482,14 @@ namespace TwitchLib.WebSocket
                     {
                         await Task.Delay(_options.SendDelay);
 
-                        if (_whispersSent == _options.WhispersAllowedInPeriod)
+                        if (_throttlers.WhispersSent == _options.WhispersAllowedInPeriod)
                         {
                             OnWhisperThrottled?.Invoke(this, new OnWhisperThrottledEventArgs
                             {
                                 Message = "Whisper Throttle Occured. Too Many Whispers within the period specified in WebsocketClientOptions.",
                                 AllowedInPeriod = _options.WhispersAllowedInPeriod,
                                 Period = _options.WhisperThrottlingPeriod,
-                                SentWhisperCount = Interlocked.CompareExchange(ref _whispersSent, 0, 0)
+                                SentWhisperCount = Interlocked.CompareExchange(ref _throttlers.WhispersSent, 0, 0)
                             });
 
                             continue;
@@ -529,7 +497,7 @@ namespace TwitchLib.WebSocket
 
                         if (_ws.State == WebSocketState.Open && !_reconnecting)
                         {
-                            var msg = _whisperQueue.Take(_tokenSource.Token);
+                            var msg = _throttlers.WhisperQueue.Take(_tokenSource.Token);
                             if (msg.Item1.Add(_options.SendCacheItemTimeout) < DateTime.UtcNow)
                             {
                                 continue;
@@ -538,7 +506,7 @@ namespace TwitchLib.WebSocket
                             try
                             {
                                 await _ws.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, _tokenSource.Token);
-                                IncrementWhisperCount();
+                                _throttlers.IncrementWhisperCount();
                             }
                             catch (Exception ex)
                             {
@@ -558,35 +526,7 @@ namespace TwitchLib.WebSocket
                 return Task.CompletedTask;
             });
         }
-
-        private void StartThrottlingWindowReset()
-        {
-            _resetThrottler = Task.Run(async () => {
-                _resetThrottlerRunning = true;
-                while (!_disposedValue && !_reconnecting)
-                {
-                    Interlocked.Exchange(ref _sentCount, 0);
-                    await Task.Delay(_options.ThrottlingPeriod);
-                }
-                _resetThrottlerRunning = false;
-                return Task.CompletedTask;
-            });
-        }
-
-        private void StartWhisperThrottlingWindowReset()
-        {
-            _resetThrottler = Task.Run(async () => {
-                _resetWhisperThrottlerRunning = true;
-                while (!_disposedValue && !_reconnecting)
-                {
-                    Interlocked.Exchange(ref _whispersSent, 0);
-                    await Task.Delay(_options.ThrottlingPeriod);
-                }
-                _resetWhisperThrottlerRunning = false;
-                return Task.CompletedTask;
-            });
-        }
-
+        
         /// <summary>
         /// Disconnect the Client from the Server
         /// </summary>
@@ -611,10 +551,10 @@ namespace TwitchLib.WebSocket
             {
                 if (disposing)
                 {
-                    if (_sendQueue.Count > 0 && _senderRunning)
+                    if (_throttlers.SendQueue.Count > 0 && _senderRunning)
                     {
                         var i = 0;
-                        while (_sendQueue.Count > 0 && _senderRunning)
+                        while (_throttlers.SendQueue.Count > 0 && _senderRunning)
                         {
                             i++;
                             Task.Delay(1000).Wait();
@@ -622,10 +562,10 @@ namespace TwitchLib.WebSocket
                                 break;
                         }
                     }
-                    if (_whisperQueue.Count > 0 && _whisperSenderRunning)
+                    if (_throttlers.WhisperQueue.Count > 0 && _whisperSenderRunning)
                     {
                         var i = 0;
-                        while (_whisperQueue.Count > 0 && _whisperSenderRunning)
+                        while (_throttlers.WhisperQueue.Count > 0 && _whisperSenderRunning)
                         {
                             i++;
                             Task.Delay(1000).Wait();
@@ -642,6 +582,7 @@ namespace TwitchLib.WebSocket
                 }
 
                 _disposedValue = true;
+                _throttlers.ShouldDispose = true;
             }
         }
 

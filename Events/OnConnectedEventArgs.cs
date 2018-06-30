@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TwitchLib.WebSocket.Events
+namespace TwitchLib.Communication.Events
 {
     public class OnConnectedEventArgs : EventArgs
     { }

@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Net.WebSockets;
-using TwitchLib.WebSocket.Events;
+using TwitchLib.Communication.Events;
 
-namespace TwitchLib.WebSocket
+namespace TwitchLib.Communication
 {
-    public interface IWebSocketClient
+    public interface IClient
     {
         /// <inheritdoc />
         TimeSpan DefaultKeepAliveInterval { get; set; }
@@ -13,7 +12,7 @@ namespace TwitchLib.WebSocket
         /// <inheritdoc />
         int WhisperQueueLength { get; }
         /// <inheritdoc />
-        WebSocketState State { get; }
+        bool IsConnected { get; }
         /// <inheritdoc />
         event EventHandler<OnConnectedEventArgs> OnConnected;
         /// <inheritdoc />
@@ -43,12 +42,8 @@ namespace TwitchLib.WebSocket
         /// <inheritdoc />
         bool Open();
         /// <inheritdoc />
-        bool Send(byte[] data);
-        /// <inheritdoc />
         bool Send(string data);
         /// <inheritdoc />
         bool SendWhisper(string data);
-        /// <inheritdoc />
-        bool SendWhisper(byte[] data);
     }
 }

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using TwitchLib.WebSocket.Enums;
+using TwitchLib.Communication.Enums;
 
-namespace TwitchLib.WebSocket
+namespace TwitchLib.Communication
 {
-    public class WebSocketClientOptions : IWebsocketClientOptions
+    public class ClientOptions : IClientOptions
     {
         /// <summary>
         /// Headers, Cookies Etc.
@@ -29,13 +29,14 @@ namespace TwitchLib.WebSocket
 
         /// <summary>
         /// Reconnection Policy Settings. Reconnect without Losing data etc.
+        /// The Default Policy applied is 10 reconnection attempts with 3 seconds between each attempt.
         /// </summary>
-        public ReconnectionPolicy ReconnectionPolicy { get; set; }
+        public ReconnectionPolicy ReconnectionPolicy { get; set; } = new ReconnectionPolicy(reconnectInterval: 3000, maxAttempts: 10);
 
         /// <summary>
-        /// Use Secure Websocket Connection [SSL] (default: true)
+        /// Use Secure Connection [SSL] (default: true)
         /// </summary>
-        public bool UseWSS { get; set; } = true;
+        public bool UseSSL { get; set; } = true;
 
         /// <summary>
         /// How long to wait on a clean disconnect [in ms] (default 20000ms).

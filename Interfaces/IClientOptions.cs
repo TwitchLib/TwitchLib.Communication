@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using TwitchLib.WebSocket.Enums;
+using TwitchLib.Communication.Enums;
 
-namespace TwitchLib.WebSocket
+namespace TwitchLib.Communication
 {
-    public interface IWebsocketClientOptions
+    public interface IClientOptions
     {
         /// <inheritdoc />
         ClientType ClientType { get; set; }
@@ -25,7 +25,7 @@ namespace TwitchLib.WebSocket
         /// <inheritdoc />
         TimeSpan ThrottlingPeriod { get; set; }
         /// <inheritdoc />
-        bool UseWSS { get; set; }
+        bool UseSSL { get; set; }
         /// <inheritdoc />
         TimeSpan WhisperThrottlingPeriod { get; set; }
         /// <inheritdoc />

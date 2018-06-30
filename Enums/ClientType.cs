@@ -1,4 +1,4 @@
-﻿namespace TwitchLib.WebSocket.Enums
+﻿namespace TwitchLib.Communication.Enums
 {
     public enum ClientType
     {

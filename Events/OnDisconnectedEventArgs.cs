@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Net.WebSockets;
 
-namespace TwitchLib.WebSocket.Events
+namespace TwitchLib.Communication.Events
 {
     public class OnDisconnectedEventArgs : EventArgs
-    {
-        public WebSocketCloseStatus Reason;
-    }
+    { }
 }

@@ -1,76 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using TwitchLib.Communication.Enums;
+using TwitchLib.Communication.Interfaces;
 
-namespace TwitchLib.Communication
+namespace TwitchLib.Communication.Models
 {
     public class ClientOptions : IClientOptions
     {
-        /// <summary>
-        /// Headers, Cookies Etc.
-        /// </summary>
         public IEnumerable<Tuple<string, string>> Headers { get; set; }
-
-        /// <summary>
-        /// Maximum number of Queued outgoing messages (default 10000).
-        /// </summary>
         public int SendQueueCapacity { get; set; } = 10000;
-
-        /// <summary>
-        /// The amount of time an object can wait to be sent before it is considered dead, and should be skipped (default 30 minutes).
-        /// A dead item will be ignored and removed from the send queue when it is hit.
-        /// </summary>
         public TimeSpan SendCacheItemTimeout { get; set; } = TimeSpan.FromMinutes(30);
-
-        /// <summary>
-        /// Minimum time between sending items from the queue [in ms] (default 50ms).
-        /// </summary>
         public ushort SendDelay { get; set; } = 50;
-
-        /// <summary>
-        /// Reconnection Policy Settings. Reconnect without Losing data etc.
-        /// The Default Policy applied is 10 reconnection attempts with 3 seconds between each attempt.
-        /// </summary>
-        public ReconnectionPolicy ReconnectionPolicy { get; set; } = new ReconnectionPolicy(reconnectInterval: 3000, maxAttempts: 10);
-
-        /// <summary>
-        /// Use Secure Connection [SSL] (default: true)
-        /// </summary>
-        public bool UseSSL { get; set; } = true;
-
-        /// <summary>
-        /// How long to wait on a clean disconnect [in ms] (default 20000ms).
-        /// </summary>
+        public ReconnectionPolicy ReconnectionPolicy { get; set; } = new ReconnectionPolicy(3000, maxAttempts: 10);
+        public bool UseSsl { get; set; } = true;
         public int DisconnectWait { get; set; } = 20000;
-
-        /// <summary>
-        /// Type of the Client to Create. Possible Types Chat or PubSub.
-        /// </summary>
         public ClientType ClientType { get; set; } = ClientType.Chat;
-
-        /// <summary>
-        /// Period Between each reset of the throttling instance window. (default 30s)
-        /// </summary>
         public TimeSpan ThrottlingPeriod { get; set; } = TimeSpan.FromSeconds(30);
-
-        /// <summary>
-        /// Number of Messages Allowed Per Instance of the Throttling Period. (default 100)
-        /// </summary>
         public int MessagesAllowedInPeriod { get; set; } = 100;
-
-        /// <summary>
-        /// Period Between each reset of the whisper throttling instance window. (default 60s)
-        /// </summary>
         public TimeSpan WhisperThrottlingPeriod { get; set; } = TimeSpan.FromSeconds(60);
-
-        /// <summary>
-        /// Number of Whispers Allowed to be sent Per Instance of the Throttling Period. (default 100)
-        /// </summary>
         public int WhispersAllowedInPeriod { get; set; } = 100;
-
-        /// <summary>
-        /// Maximum number of Queued outgoing Whispers (default 10000).
-        /// </summary>
         public int WhisperQueueCapacity { get; set; } = 10000;
     }
 }

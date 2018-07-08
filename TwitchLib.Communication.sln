@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2035
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TwitchLib.Communication", "TwitchLib.Communication.csproj", "{5DBA3070-744D-45EF-84EA-D5ECF3C71CFE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5DBA3070-744D-45EF-84EA-D5ECF3C71CFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5DBA3070-744D-45EF-84EA-D5ECF3C71CFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5DBA3070-744D-45EF-84EA-D5ECF3C71CFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5DBA3070-744D-45EF-84EA-D5ECF3C71CFE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0A90F04B-C3CF-4F82-A49A-3179D035173E}
+	EndGlobalSection
+EndGlobal

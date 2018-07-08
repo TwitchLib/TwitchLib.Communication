@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TwitchLib.Communication
+namespace TwitchLib.Communication.Services
 {
     public class Throttlers
     {

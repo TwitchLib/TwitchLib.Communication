@@ -1,4 +1,4 @@
-﻿namespace TwitchLib.Communication
+﻿namespace TwitchLib.Communication.Models
 {
     public class ReconnectionPolicy
     {

@@ -1,49 +1,114 @@
 ﻿using System;
 using TwitchLib.Communication.Events;
 
-namespace TwitchLib.Communication
+namespace TwitchLib.Communication.Interfaces
 {
     public interface IClient
     {
-        /// <inheritdoc />
+        /// <summary>
+        /// Keep alive period for the Connection. Not needed in TCP.
+        /// </summary>
         TimeSpan DefaultKeepAliveInterval { get; set; }
-        /// <inheritdoc />
+
+        /// <summary>
+        /// The current number of items waiting to be sent.
+        /// </summary>
         int SendQueueLength { get; }
-        /// <inheritdoc />
+
+        /// <summary>
+        /// The current number of Whispers waiting to be sent.
+        /// </summary>
         int WhisperQueueLength { get; }
-        /// <inheritdoc />
+        
+        /// <summary>
+        /// The current state of the connection.
+        /// </summary>
         bool IsConnected { get; }
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Fires when the Client has connected
+        /// </summary>
         event EventHandler<OnConnectedEventArgs> OnConnected;
-        /// <inheritdoc />
+        
+        /// <summary>
+        /// Fires when Data (ByteArray) is received.
+        /// </summary>
         event EventHandler<OnDataEventArgs> OnData;
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Fires when the Client disconnects
+        /// </summary>
         event EventHandler<OnDisconnectedEventArgs> OnDisconnected;
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Fires when An Exception Occurs in the client
+        /// </summary>
         event EventHandler<OnErrorEventArgs> OnError;
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Fires when a Fatal Error Occurs.
+        /// </summary>
         event EventHandler<OnFatalErrorEventArgs> OnFatality;
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Fires when a Message/ group of messages is received.
+        /// </summary>
         event EventHandler<OnMessageEventArgs> OnMessage;
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Fires when a Message has been throttled.
+        /// </summary>
         event EventHandler<OnMessageThrottledEventArgs> OnMessageThrottled;
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Fires when a Whisper has been throttled.
+        /// </summary>
         event EventHandler<OnWhisperThrottledEventArgs> OnWhisperThrottled;
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Fires when a message Send event failed.
+        /// </summary>
         event EventHandler<OnSendFailedEventArgs> OnSendFailed;
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Fires when the websocket state changes
+        /// </summary>
         event EventHandler<OnStateChangedEventArgs> OnStateChanged;
-          /// <inheritdoc />
+
+        /// <summary>
+        /// Disconnect the Client from the Server
+        /// </summary>
         void Close();
-        /// <inheritdoc />
+        
+        /// <summary>
+        /// Dispose the Client. Forces the Send Queue to be destroyed, resulting in Message Loss.
+        /// </summary>
         void Dispose();
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Disposes the Client. Waits for current Messages in the Queue to be processed first.
+        /// </summary>
+        /// <param name="waitForSendsToComplete">Should wait or not. boolean.</param>
         void Dispose(bool waitForSendsToComplete);
-        /// <inheritdoc />
+
+        /// <summary>
+        /// Connect the Client to the requested Url.
+        /// </summary>
+        /// <returns>Returns True if Connected, False if Failed to Connect.</returns>
         bool Open();
-        /// <inheritdoc />
-        bool Send(string data);
-        /// <inheritdoc />
-        bool SendWhisper(string data);
+
+        /// <summary>
+        /// Queue a Message to Send to the server as a String.
+        /// </summary>
+        /// <param name="message">The Message To Queue</param>
+        /// <returns>Returns True if was successfully queued. False if it fails.</returns>
+        bool Send(string message);
+
+        /// <summary>
+        /// Queue a Whisper to Send to the server as a String.
+        /// </summary>
+        /// <param name="message">The Whisper To Queue</param>
+        /// <returns>Returns True if was successfully queued. False if it fails.</returns>
+        bool SendWhisper(string message);
     }
 }

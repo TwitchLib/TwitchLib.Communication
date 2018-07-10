@@ -11,6 +11,8 @@ namespace TwitchLib.Communication.Services
         public readonly BlockingCollection<Tuple<DateTime, string>> WhisperQueue = new BlockingCollection<Tuple<DateTime, string>>();
         public bool Reconnecting { get; set; } = false;
         public bool ShouldDispose { get; set; } = false;
+        public CancellationTokenSource TokenSource { get; set; }
+
         public bool ResetThrottlerRunning;
         public bool ResetWhisperThrottlerRunning;
         
@@ -34,7 +36,7 @@ namespace TwitchLib.Communication.Services
                 while (!ShouldDispose && !Reconnecting)
                 {
                     Interlocked.Exchange(ref SentCount, 0);
-                    await Task.Delay(_throttlingPeriod);
+                    await Task.Delay(_throttlingPeriod, TokenSource.Token);
                 }
                 ResetThrottlerRunning = false;
                 return Task.CompletedTask;
@@ -48,7 +50,7 @@ namespace TwitchLib.Communication.Services
                 while (!ShouldDispose && !Reconnecting)
                 {
                     Interlocked.Exchange(ref WhispersSent, 0);
-                    await Task.Delay(_whisperThrottlingPeriod);
+                    await Task.Delay(_whisperThrottlingPeriod, TokenSource.Token);
                 }
                 ResetWhisperThrottlerRunning = false;
                 return Task.CompletedTask;

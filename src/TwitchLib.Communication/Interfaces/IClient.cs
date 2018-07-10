@@ -71,14 +71,20 @@ namespace TwitchLib.Communication.Interfaces
         event EventHandler<OnSendFailedEventArgs> OnSendFailed;
 
         /// <summary>
-        /// Fires when the websocket state changes
+        /// Fires when the connection state changes
         /// </summary>
         event EventHandler<OnStateChangedEventArgs> OnStateChanged;
 
         /// <summary>
-        /// Disconnect the Client from the Server
+        /// Fires when the client reconnects automatically
         /// </summary>
-        void Close();
+        event EventHandler<OnReconnectedEventArgs> OnReconnected;
+
+        /// <summary>
+        /// Disconnect the Client from the Server
+        /// <param name="callDisconnect">Set disconnect called in the client. Used in test cases. (default true)</param>
+        /// </summary>
+        void Close(bool callDisconnect = true);
         
         /// <summary>
         /// Dispose the Client. Forces the Send Queue to be destroyed, resulting in Message Loss.

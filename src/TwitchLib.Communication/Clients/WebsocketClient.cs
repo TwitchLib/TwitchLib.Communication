@@ -53,6 +53,7 @@ namespace TwitchLib.Communication
         public event EventHandler<OnFatalErrorEventArgs> OnFatality;
         public event EventHandler<OnMessageThrottledEventArgs> OnMessageThrottled;
         public event EventHandler<OnWhisperThrottledEventArgs> OnWhisperThrottled;
+        public event EventHandler<OnReconnectedEventArgs> OnReconnected;
         #endregion
 
         public WebSocketClient(IClientOptions options = null)
@@ -70,7 +71,8 @@ namespace TwitchLib.Communication
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            _throttlers = new Throttlers(_options.ThrottlingPeriod, _options.WhisperThrottlingPeriod);
+
+            _throttlers = new Throttlers(_options.ThrottlingPeriod, _options.WhisperThrottlingPeriod) { TokenSource = _tokenSource };
 
             InitializeClient();
             StartMonitor();
@@ -177,20 +179,20 @@ namespace TwitchLib.Communication
                 var needsReconnect = false;
                 try
                 {
-                    var lastState = _ws.State == WebSocketState.Open ? true : false;
+                    var lastState = IsConnected;
                     while (_ws != null && !_disposedValue)
                     {
-                        if (lastState == (_ws.State == WebSocketState.Open ? true : false))
+                        if (lastState == IsConnected)
                         {
                             Thread.Sleep(200);
                             continue;
                         }
                         OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = _ws.State == WebSocketState.Open, WasConnected = lastState});
 
-                        if (_ws.State == WebSocketState.Open)
+                        if (IsConnected)
                             OnConnected?.Invoke(this, new OnConnectedEventArgs());
 
-                        if ((_ws.State == WebSocketState.Closed || _ws.State == WebSocketState.Aborted) && !_reconnecting)
+                        if (!IsConnected && !_reconnecting)
                         {
                             if (lastState && !_disconnectCalled && _options.ReconnectionPolicy != null && !_options.ReconnectionPolicy.AreAttemptsComplete())
                             {
@@ -202,7 +204,7 @@ namespace TwitchLib.Communication
                                 OnError?.Invoke(this, new OnErrorEventArgs { Exception = new Exception(_ws.CloseStatus + " " + _ws.CloseStatusDescription) });
                         }
 
-                        lastState = _ws.State == WebSocketState.Open ? true : false;
+                        lastState = IsConnected;
                     }
                 }
                 catch (Exception ex)
@@ -222,7 +224,8 @@ namespace TwitchLib.Communication
                 _tokenSource.Cancel();
                 _reconnecting = true;
                 _throttlers.Reconnecting = true;
-                if (!Task.WaitAll(new[] {_monitor, _listener, _sender, _whisperSender, _throttlers.ResetThrottler, _throttlers.ResetWhisperThrottler }, 15000))
+
+                if (!Task.WaitAll(new[] {_monitor, _listener, _sender, _whisperSender }, 15000))
                 {
                     OnFatality?.Invoke(this, new OnFatalErrorEventArgs { Reason = "Fatal network error. Network services fail to shut down." });
                     _reconnecting = false;
@@ -231,11 +234,11 @@ namespace TwitchLib.Communication
                     _tokenSource.Cancel();
                     return;
                 }
-                _ws.Dispose();
 
                 OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = false, WasConnected = false });
 
                 _tokenSource = new CancellationTokenSource();
+                _throttlers.TokenSource = _tokenSource;
 
                 while (!_disconnectCalled && !_disposedValue && !IsConnected && !_tokenSource.IsCancellationRequested)
                     try
@@ -279,6 +282,8 @@ namespace TwitchLib.Communication
                     _throttlers.StartThrottlingWindowReset();
                 if (_throttlers.ResetWhisperThrottlerRunning)
                     _throttlers.StartWhisperThrottlingWindowReset();
+
+                OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
             });
         }
 
@@ -466,11 +471,11 @@ namespace TwitchLib.Communication
             });
         }
         
-        public void Close()
+        public void Close(bool callDisconnect = true)
         {
             try
             {
-                _disconnectCalled = true;
+                _disconnectCalled = callDisconnect;
                 _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "NORMAL SHUTDOWN", _tokenSource.Token).Wait(_options.DisconnectWait);
             }
             catch

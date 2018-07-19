@@ -180,7 +180,7 @@ namespace TwitchLib.Communication
                 try
                 {
                     var lastState = IsConnected;
-                    while (_ws != null && !_disposedValue)
+                    while (_ws != null && !_disposedValue && !_reconnecting)
                     {
                         if (lastState == IsConnected)
                         {
@@ -214,7 +214,7 @@ namespace TwitchLib.Communication
                 if (needsReconnect && !_reconnecting && !_disconnectCalled)
                     Reconnect();
                 _monitorRunning = false;
-            });
+            }, _tokenSource.Token);
         }
 
         public void Reconnect()

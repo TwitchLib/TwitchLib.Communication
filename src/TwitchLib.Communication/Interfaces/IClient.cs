@@ -116,5 +116,10 @@ namespace TwitchLib.Communication.Interfaces
         /// <param name="message">The Whisper To Queue</param>
         /// <returns>Returns True if was successfully queued. False if it fails.</returns>
         bool SendWhisper(string message);
+
+        /// <summary>
+        /// Manually reconnects the client.
+        /// </summary>
+        void Reconnect();
     }
 }

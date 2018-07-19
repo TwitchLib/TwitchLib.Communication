@@ -212,14 +212,14 @@ namespace TwitchLib.Communication
                     OnError?.Invoke(this, new OnErrorEventArgs { Exception = ex });
                 }
                 if (needsReconnect && !_reconnecting && !_disconnectCalled)
-                    DoReconnect();
+                    Reconnect();
                 _monitorRunning = false;
             });
         }
 
-        private Task DoReconnect()
+        public void Reconnect()
         {
-            return Task.Run(() =>
+            Task.Run(() =>
             {
                 _tokenSource.Cancel();
                 _reconnecting = true;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
@@ -28,8 +29,6 @@ namespace TwitchLib.Communication
         private readonly string _server = "irc.chat.twitch.tv";
         private int Port => _options != null ? _options.UseSsl ? 443 : 80 : 0;
         private System.Net.Sockets.TcpClient _client;
-        private NetworkStream _stream;
-        private SslStream _ssl;
         private StreamReader _reader;
         private StreamWriter _writer;
         private readonly IClientOptions _options;
@@ -58,18 +57,20 @@ namespace TwitchLib.Communication
         public event EventHandler<OnSendFailedEventArgs> OnSendFailed;
         public event EventHandler<OnStateChangedEventArgs> OnStateChanged;
         public event EventHandler<OnReconnectedEventArgs> OnReconnected;
-
+        
         public TcpClient(IClientOptions options = null)
         {
             _options = options ?? new ClientOptions();
             _throttlers = new Throttlers(_options.ThrottlingPeriod, _options.WhisperThrottlingPeriod){TokenSource = _tokenSource};
             InitializeClient();
-            StartMonitor();
         }
 
         private void InitializeClient()
         {
             _client = new System.Net.Sockets.TcpClient();
+
+            if (!_monitorRunning)
+                StartMonitor();
         }
 
         private void StartMonitor()
@@ -116,37 +117,47 @@ namespace TwitchLib.Communication
             }, _tokenSource.Token);
         }
 
-        public void Reconnect()
+        private void CleanupServices()
         {
-           Task.Run(() =>
-            {
-                _tokenSource.Cancel();
-                _reconnecting = true;
-                _throttlers.Reconnecting = true;
+            _tokenSource.Cancel();
+            _reconnecting = true;
+            _throttlers.Reconnecting = true;
 
-                if (!Task.WaitAll(new[] { _monitor, _listener, _sender, _whisperSender }, 15000))
+            var tasks = new[] {_monitor, _listener, _sender, _whisperSender}.Where(t => t != null).ToArray();
+            if (tasks.Length > 0)
+            {
+                if (!Task.WaitAll(tasks, 15000))
                 {
-                    OnFatality?.Invoke(this, new OnFatalErrorEventArgs { Reason = "Fatal network error. Network services fail to shut down." });
+                    OnFatality?.Invoke(this,
+                        new OnFatalErrorEventArgs
+                        {
+                            Reason = "Fatal network error. Network services fail to shut down."
+                        });
                     _reconnecting = false;
                     _throttlers.Reconnecting = false;
                     _disconnectCalled = true;
                     _tokenSource.Cancel();
                     return;
                 }
+            }
 
-                OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = false, WasConnected = false });
+            _tokenSource = new CancellationTokenSource();
+            _throttlers.TokenSource = _tokenSource;
+        }
 
-                _tokenSource = new CancellationTokenSource();
-                _throttlers.TokenSource = _tokenSource;
+        public void Reconnect()
+        {
+           Task.Run(() =>
+            {
+                if (!IsConnected)
+                    CleanupServices();
+                else
+                    Close(false);
 
                 while (!_disconnectCalled && !_disposedValue && !IsConnected && !_tokenSource.IsCancellationRequested)
                     try
                     {
                         InitializeClient();
-                        if (!_monitorRunning)
-                        {
-                            StartMonitor();
-                        }
                         Connect().Wait(15000);
                     }
                     catch
@@ -297,18 +308,17 @@ namespace TwitchLib.Communication
                 try
                 {
                     _client.Connect(_server, Port);
-                    _stream = _client.GetStream();
                     if (_options.UseSsl)
                     {
-                        _ssl = new SslStream(_stream, false);
-                        _ssl.AuthenticateAsClient(_server);
-                        _reader = new StreamReader(_ssl);
-                        _writer = new StreamWriter(_ssl);
+                        var ssl = new SslStream(_client.GetStream(), false);
+                        ssl.AuthenticateAsClient(_server);
+                        _reader = new StreamReader(ssl);
+                        _writer = new StreamWriter(ssl);
                     }
                     else
                     {
-                        _reader = new StreamReader(_stream);
-                        _writer = new StreamWriter(_stream);
+                        _reader = new StreamReader(_client.GetStream());
+                        _writer = new StreamWriter(_client.GetStream());
                     }
                 }
                 catch (Exception ex)
@@ -329,7 +339,6 @@ namespace TwitchLib.Communication
                     {
                         var input = await _reader.ReadLineAsync();
                         OnMessage?.Invoke(this, new OnMessageEventArgs { Message = input });
-
                     }
                     catch (Exception ex)
                     {
@@ -346,25 +355,19 @@ namespace TwitchLib.Communication
             await _writer.FlushAsync();
         }
 
-        public void Close(bool callDisconnect = true)
+        public void Close(bool callDisconnect = false)
         {
             _disconnectCalled = callDisconnect;
+            CleanupServices();
             
+            _reader?.Dispose();
+            _writer?.Dispose();
             _client.Close();
-
-            if (_options.UseSsl)
-            {
-                _stream?.Dispose();
-                _ssl?.Dispose();
-                _writer?.Dispose();
-                _reader?.Dispose();
-            }
-            else
-            {
-                _stream?.Dispose();
-                _writer?.Dispose();
-                _reader?.Dispose();
-            }
+            
+            InitializeClient();
+            _reconnecting = false;
+            _throttlers.Reconnecting = false;
+            OnDisconnected?.Invoke(this, new OnDisconnectedEventArgs());
         }
 
         public bool Open()
@@ -446,7 +449,7 @@ namespace TwitchLib.Communication
         {
             if (_disposedValue) return;
 
-            if (disposing)
+            if (waitForSendsToComplete)
             {
                 if (_throttlers.SendQueue.Count > 0 && _senderRunning)
                 {

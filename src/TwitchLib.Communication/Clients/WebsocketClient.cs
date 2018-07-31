@@ -68,19 +68,19 @@ namespace TwitchLib.Communication
                 case ClientType.PubSub:
                     Url = _options.UseSsl ? "wss://pubsub-edge.twitch.tv:443" : "ws://pubsub-edge.twitch.tv:80";
                     break;
-                default:
-                    throw new ArgumentOutOfRangeException();
             }
 
             _throttlers = new Throttlers(_options.ThrottlingPeriod, _options.WhisperThrottlingPeriod) { TokenSource = _tokenSource };
 
             InitializeClient();
-            StartMonitor();
         }
 
         private void InitializeClient()
         {
             _ws = new ClientWebSocket();
+            
+            if (!_monitorRunning)
+                StartMonitor();
 
             DefaultKeepAliveInterval = Timeout.InfiniteTimeSpan;
 
@@ -88,21 +88,16 @@ namespace TwitchLib.Communication
 
             foreach (var h in _options.Headers)
             {
-                try
-                {
-                    _ws.Options.SetRequestHeader(h.Item1, h.Item2);
-                }
-                catch
-                {
-                    // ignored
-                }
+                _ws.Options.SetRequestHeader(h.Item1, h.Item2);
             }
+
         }
 
         public bool Open()
         {
             try
             {
+                InitializeClient();
                 _disconnectCalled = false;
                 _ws.ConnectAsync(new Uri(Url), _tokenSource.Token).Wait(15000);
                 StartListener();
@@ -220,71 +215,54 @@ namespace TwitchLib.Communication
         public void Reconnect()
         {
             Task.Run(() =>
-            {
-                _tokenSource.Cancel();
-                _reconnecting = true;
-                _throttlers.Reconnecting = true;
-
-                if (!Task.WaitAll(new[] {_monitor, _listener, _sender, _whisperSender }, 15000))
                 {
-                    OnFatality?.Invoke(this, new OnFatalErrorEventArgs { Reason = "Fatal network error. Network services fail to shut down." });
-                    _reconnecting = false;
-                    _throttlers.Reconnecting = false;
-                    _disconnectCalled = true;
-                    _tokenSource.Cancel();
-                    return;
-                }
+                    if (!IsConnected)
+                        CleanupServices();
+                    else
+                        Close(false);
 
-                OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = false, WasConnected = false });
-
-                _tokenSource = new CancellationTokenSource();
-                _throttlers.TokenSource = _tokenSource;
-
-                while (!_disconnectCalled && !_disposedValue && !IsConnected && !_tokenSource.IsCancellationRequested)
-                    try
-                    {
-                        InitializeClient();
-                        if (!_monitorRunning)
+                    while (!_disconnectCalled && !_disposedValue && !IsConnected &&
+                           !_tokenSource.IsCancellationRequested)
+                        try
                         {
-                            StartMonitor();
+                            InitializeClient();
+                            _ws.ConnectAsync(new Uri(Url), _tokenSource.Token).Wait(15000);
+                        }
+                        catch
+                        {
+                            Close();
+                            Thread.Sleep(_options.ReconnectionPolicy.GetReconnectInterval());
+                            _options.ReconnectionPolicy.ProcessValues();
+                            if (!_options.ReconnectionPolicy.AreAttemptsComplete()) continue;
+                            OnFatality?.Invoke(this,
+                                new OnFatalErrorEventArgs
+                                {
+                                    Reason = "Fatal network error. Max reconnect attemps reached."
+                                });
+                            _reconnecting = false;
+                            _throttlers.Reconnecting = false;
+                            _disconnectCalled = true;
+                            _tokenSource.Cancel();
+                            return;
                         }
 
-                        _ws.ConnectAsync(new Uri(Url), _tokenSource.Token).Wait(15000);
-                    }
-                    catch
-                    {
-                        _ws.Dispose();
-                        Thread.Sleep(_options.ReconnectionPolicy.GetReconnectInterval());
-                        _options.ReconnectionPolicy.ProcessValues();
-                        if (!_options.ReconnectionPolicy.AreAttemptsComplete()) continue;
+                    if (!IsConnected) return;
+                    _reconnecting = false;
+                    _throttlers.Reconnecting = false;
 
-                        OnFatality?.Invoke(this, new OnFatalErrorEventArgs { Reason = "Fatal network error. Max reconnect attemps reached." });
-                        _reconnecting = false;
-                        _throttlers.Reconnecting = false;
-                        _disconnectCalled = true;
-                        _tokenSource.Cancel();
-                        return;
-                    }
+                    if (!_listenerRunning)
+                        StartListener();
+                    if (!_senderRunning)
+                        StartSender();
+                    if (!_whisperSenderRunning)
+                        StartWhisperSender();
+                    if (!_throttlers.ResetThrottlerRunning)
+                        _throttlers.StartThrottlingWindowReset();
+                    if (_throttlers.ResetWhisperThrottlerRunning)
+                        _throttlers.StartWhisperThrottlingWindowReset();
 
-                if (!IsConnected) return;
-
-                _reconnecting = false;
-                _throttlers.Reconnecting = false;
-                if (!_monitorRunning)
-                    StartMonitor();
-                if (!_listenerRunning)
-                    StartListener();
-                if (!_senderRunning)
-                    StartSender();
-                if (!_whisperSenderRunning)
-                    StartWhisperSender();
-                if (!_throttlers.ResetThrottlerRunning)
-                    _throttlers.StartThrottlingWindowReset();
-                if (_throttlers.ResetWhisperThrottlerRunning)
-                    _throttlers.StartWhisperThrottlingWindowReset();
-
-                OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
-            });
+                    OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
+                });
         }
 
         private void StartListener()
@@ -294,13 +272,10 @@ namespace TwitchLib.Communication
                 _listenerRunning = true;
                 try
                 {
+                    var message = "";
+
                     while (_ws.State == WebSocketState.Open && !_disposedValue && !_reconnecting)
                     {
-                        var message = "";
-                        var binary = new List<byte>();
-
-                        READ:
-
                         var buffer = new byte[1024];
                         WebSocketReceiveResult res = null;
 
@@ -315,41 +290,31 @@ namespace TwitchLib.Communication
                         }
 
                         if (res == null)
-                            goto READ;
+                            continue;
 
-                        if (res.MessageType == WebSocketMessageType.Close)
+                        switch (res.MessageType)
                         {
-                            await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SERVER REQUESTED CLOSE", _tokenSource.Token);
-                        }
-
-                        if (res.MessageType == WebSocketMessageType.Text)
-                        {
-                            if (!res.EndOfMessage)
-                            {
+                            case WebSocketMessageType.Close:
+                                await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SERVER REQUESTED CLOSE", _tokenSource.Token);
+                                break;
+                            case WebSocketMessageType.Text when !res.EndOfMessage:
                                 message += Encoding.UTF8.GetString(buffer).TrimEnd('\0');
-                                goto READ;
-                            }
-                            message += Encoding.UTF8.GetString(buffer).TrimEnd('\0');
+                                continue;
+                            case WebSocketMessageType.Text:
+                                message += Encoding.UTF8.GetString(buffer).TrimEnd('\0');
 
-                            if (message.Trim() == "ping")
-                                Send("pong");
-                            else
-                            {
-                                Task.Run(() => OnMessage?.Invoke(this, new OnMessageEventArgs { Message = message })).Wait(50);
-                            }
-                        }
-                        else
-                        {
-                            if (!res.EndOfMessage)
-                            {
-                                binary.AddRange(buffer.Where(b => b != '\0'));
-                                goto READ;
-                            }
+                                if (message.Trim() == "ping")
+                                    Send("pong");
+                                else
+                                {
+                                    var output = message;
+                                    Task.Run(() => OnMessage?.Invoke(this, new OnMessageEventArgs { Message = output })).Wait(50);
+                                }
 
-                            binary.AddRange(buffer.Where(b => b != '\0'));
-                            Task.Run(() => OnData?.Invoke(this, new OnDataEventArgs { Data = binary.ToArray() })).Wait(50);
+                                break;
                         }
-                        buffer = null;
+
+                        message = "";
                     }
                 }
                 catch (Exception ex)
@@ -470,18 +435,44 @@ namespace TwitchLib.Communication
                 return Task.CompletedTask;
             });
         }
-        
-        public void Close(bool callDisconnect = true)
+
+        private void CleanupServices()
         {
-            try
+            _tokenSource.Cancel();
+            _reconnecting = true;
+            _throttlers.Reconnecting = true;
+
+            var tasks = new[] {_monitor, _listener, _sender, _whisperSender}.Where(t => t != null).ToArray();
+            if (tasks.Length > 0)
             {
-                _disconnectCalled = callDisconnect;
-                _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "NORMAL SHUTDOWN", _tokenSource.Token).Wait(_options.DisconnectWait);
+                if (!Task.WaitAll(tasks, 15000))
+                {
+                    OnFatality?.Invoke(this,
+                        new OnFatalErrorEventArgs
+                        {
+                            Reason = "Fatal network error. Network services fail to shut down."
+                        });
+                    _reconnecting = false;
+                    _throttlers.Reconnecting = false;
+                    _disconnectCalled = true;
+                    _tokenSource.Cancel();
+                    return;
+                }
             }
-            catch
-            {
-                // ignored
-            }
+
+            _tokenSource = new CancellationTokenSource();
+            _throttlers.TokenSource = _tokenSource;
+            _ws?.Dispose();
+        }
+        
+        public void Close(bool callDisconnect = false)
+        {
+            _disconnectCalled = callDisconnect;
+            CleanupServices();
+            InitializeClient();
+            _reconnecting = false;
+            _throttlers.Reconnecting = false;
+            OnDisconnected?.Invoke(this, new OnDisconnectedEventArgs());
         }
 
         #region IDisposable Support

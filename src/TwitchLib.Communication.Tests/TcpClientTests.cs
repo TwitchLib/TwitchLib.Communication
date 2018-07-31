@@ -29,7 +29,7 @@ namespace TwitchLib.Communication.Tests
         [Fact]
         public void ClientRaisesOnDisconnected()
         {
-            var client = new TcpClient(new ClientOptions() {DisconnectWait = 5000});
+            var client = new TcpClient(new ClientOptions() {DisconnectWait = 100});
             var pauseDisconnected = new ManualResetEvent(false);
 
             Assert.Raises<OnDisconnectedEventArgs>(
@@ -37,18 +37,23 @@ namespace TwitchLib.Communication.Tests
                 h => client.OnDisconnected -= h,
                 () =>
                 {
-                    client.OnConnected += (sender, e) => { client.Close(); };
-                    client.OnDisconnected += (sender, e) => { pauseDisconnected.Set(); };
+                    client.OnConnected += async (sender, e) =>
+                    {
+                        client.Close();
+                    };
+                    client.OnDisconnected += (sender, e) =>
+                    {
+                        pauseDisconnected.Set();
+                    };
                     client.Open();
-                    Assert.True(pauseDisconnected.WaitOne(5000));
+                    Assert.True(pauseDisconnected.WaitOne(20000));
                 });
         }
 
         [Fact]
         public void ClientRaisesOnReconnectedEventArgs()
         {
-            var client = new TcpClient();
-            var pauseConnected = new ManualResetEvent(false);
+            var client = new TcpClient(new ClientOptions(){ReconnectionPolicy = null});
             var pauseReconnected = new ManualResetEvent(false);
 
             Assert.Raises<OnReconnectedEventArgs>(
@@ -56,59 +61,23 @@ namespace TwitchLib.Communication.Tests
                 h => client.OnReconnected -= h,
                 () =>
                 {
-                    client.OnConnected += (s, e) =>
+                    client.OnConnected += async (s, e) =>
                     {
-                        Task.Run(async () =>
-                        {
-                            pauseConnected.Set();
-                            await Task.Delay(1000);
-                            client.Close(false);
-                        });
+                        client.Reconnect();
                     };
 
                     client.OnReconnected += (s, e) => { pauseReconnected.Set(); };
                     client.Open();
 
-                    Assert.True(pauseConnected.WaitOne(5000));
                     Assert.True(pauseReconnected.WaitOne(20000));
                 });
         }
-
-        [Fact]
-        public void ManuallyReconnectsOk()
-        {
-            var client = new TcpClient(new ClientOptions() {ReconnectionPolicy = null});
-            var pauseConnected = new ManualResetEvent(false);
-            var pauseReconnected = new ManualResetEvent(false);
-
-            Assert.Raises<OnReconnectedEventArgs>(
-                h => client.OnReconnected += h,
-                h => client.OnReconnected -= h,
-                () =>
-                {
-                    client.OnConnected += (s, e) =>
-                    {
-                        Task.Run(async () =>
-                        {
-                            pauseConnected.Set();
-                            await Task.Delay(1000);
-                            client.Close(false);
-                        });
-                    };
-                    client.OnDisconnected += (s, e) => { client.Reconnect(); };
-                    client.OnReconnected += (s, e) => { pauseReconnected.Set(); };
-                    client.Open();
-
-                    Assert.True(pauseConnected.WaitOne(5000));
-                    Assert.True(pauseReconnected.WaitOne(60000));
-                });
-        }
-
+        
         [Fact]
         public void DisposeClientBeforeConnecting_IsOK()
         {
             var tcpClient = new TcpClient();
-            tcpClient.Dispose();
+            tcpClient.Dispose(false);
         }
 
         [Fact]

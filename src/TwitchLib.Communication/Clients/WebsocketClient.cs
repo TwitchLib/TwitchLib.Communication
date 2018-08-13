@@ -82,8 +82,10 @@ namespace TwitchLib.Communication.Clients
 
                 InitializeClient();
                 Client.ConnectAsync(new Uri(Url), _tokenSource.Token).Wait(10000);
+                if (!IsConnected) return Open();
+                
                 StartNetworkServices();
-                return IsConnected;
+                return true;
             }
             catch (WebSocketException)
             {

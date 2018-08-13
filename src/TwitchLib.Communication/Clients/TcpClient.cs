@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -73,6 +74,8 @@ namespace TwitchLib.Communication.Clients
             try
             {
                 if (IsConnected) return true;
+
+                Task.Run(() => { 
                 InitializeClient();
                 Client.Connect(_server, Port);
                 if (Options.UseSsl)
@@ -87,11 +90,15 @@ namespace TwitchLib.Communication.Clients
                     _reader = new StreamReader(Client.GetStream());
                     _writer = new StreamWriter(Client.GetStream());
                 }
+                }).Wait(10000);
 
+                if (!IsConnected) return Open();
+                
                 StartNetworkServices();
-                return IsConnected;
+                return true;
+
             }
-            catch (WebSocketException)
+            catch (Exception)
             {
                 InitializeClient();
                 return false;

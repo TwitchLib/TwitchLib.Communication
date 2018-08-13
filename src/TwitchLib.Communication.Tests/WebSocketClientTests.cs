@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Models;
 using Xunit;
@@ -9,9 +10,8 @@ namespace TwitchLib.Communication.Tests
     public class WebSocketClientTests
     {
         [Fact]
-        public void ClientRaisesOnConnectedEventArgs()
+        public void Client_Raises_OnConnected_EventArgs()
         {
-
             var client = new WebSocketClient();
             var pauseConnected = new ManualResetEvent(false);
 
@@ -27,7 +27,7 @@ namespace TwitchLib.Communication.Tests
         }
 
         [Fact]
-        public void ClientRaisesOnDisconnected()
+        public void Client_Raises_OnDisconnected_EventArgs()
         {
             var client = new WebSocketClient(new ClientOptions() {DisconnectWait = 5000});
             var pauseDisconnected = new ManualResetEvent(false);
@@ -52,7 +52,7 @@ namespace TwitchLib.Communication.Tests
         }
 
         [Fact]
-        public void ClientRaisesOnReconnectedEventArgs()
+        public void Client_Raises_OnReconnected_EventArgs()
         {
             var client = new WebSocketClient(new ClientOptions(){ReconnectionPolicy = null});
             var pauseReconnected = new ManualResetEvent(false);
@@ -75,15 +75,15 @@ namespace TwitchLib.Communication.Tests
         }
 
         [Fact]
-        public void DisposeClientBeforeConnecting_IsOK()
+        public void Dispose_Client_Before_Connecting_IsOK()
         {
-            var tcpClient = new WebSocketClient();
-            tcpClient.Dispose();
+            var client = new WebSocketClient();
+            client.Dispose();
         }
 
        
         [Fact]
-        public void ClientCanSendAndReceiveMessages()
+        public void Client_Can_SendAndReceive_Messages()
         {
             var client = new WebSocketClient();
             var pauseConnected = new ManualResetEvent(false);

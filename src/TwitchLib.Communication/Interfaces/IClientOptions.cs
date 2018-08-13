@@ -18,11 +18,6 @@ namespace TwitchLib.Communication.Interfaces
         int DisconnectWait { get; set; }
 
         /// <summary>
-        /// Headers, Cookies Etc.
-        /// </summary>
-        IEnumerable<Tuple<string, string>> Headers { get; set; }
-
-        /// <summary>
         /// Number of Messages Allowed Per Instance of the Throttling Period. (default 100)
         /// </summary>
         int MessagesAllowedInPeriod { get; set; }

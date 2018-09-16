@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Models;
 using Xunit;
@@ -9,7 +10,7 @@ namespace TwitchLib.Communication.Tests
     public class TcpClientTests
     {
         [Fact]
-        public void ClientRaisesOnConnectedEventArgs()
+        public void Client_Raises_OnConnected_EventArgs()
         {
 
             var client = new TcpClient();
@@ -27,7 +28,7 @@ namespace TwitchLib.Communication.Tests
         }
 
         [Fact]
-        public void ClientRaisesOnDisconnected()
+        public void Client_Raises_OnDisconnected_EventArgs()
         {
             var client = new TcpClient(new ClientOptions() {DisconnectWait = 100});
             var pauseDisconnected = new ManualResetEvent(false);
@@ -39,6 +40,7 @@ namespace TwitchLib.Communication.Tests
                 {
                     client.OnConnected += async (sender, e) =>
                     {
+                        await Task.Delay(2000);
                         client.Close();
                     };
                     client.OnDisconnected += (sender, e) =>
@@ -51,7 +53,7 @@ namespace TwitchLib.Communication.Tests
         }
 
         [Fact]
-        public void ClientRaisesOnReconnectedEventArgs()
+        public void Client_Raises_OnReconnected_EventArgs()
         {
             var client = new TcpClient(new ClientOptions(){ReconnectionPolicy = null});
             var pauseReconnected = new ManualResetEvent(false);
@@ -63,6 +65,7 @@ namespace TwitchLib.Communication.Tests
                 {
                     client.OnConnected += async (s, e) =>
                     {
+                        await Task.Delay(2000);
                         client.Reconnect();
                     };
 
@@ -74,14 +77,14 @@ namespace TwitchLib.Communication.Tests
         }
         
         [Fact]
-        public void DisposeClientBeforeConnecting_IsOK()
+        public void Dispose_Client_Before_Connecting_IsOK()
         {
             var tcpClient = new TcpClient();
-            tcpClient.Dispose(false);
+            tcpClient.Dispose();
         }
 
         [Fact]
-        public void ClientCanSendAndReceiveMessages()
+        public void Client_Can_SendAndReceive_Messages()
         {
             var client = new TcpClient();
             var pauseConnected = new ManualResetEvent(false);

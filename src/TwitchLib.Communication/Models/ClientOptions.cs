@@ -7,7 +7,6 @@ namespace TwitchLib.Communication.Models
 {
     public class ClientOptions : IClientOptions
     {
-        public IEnumerable<Tuple<string, string>> Headers { get; set; }
         public int SendQueueCapacity { get; set; } = 10000;
         public TimeSpan SendCacheItemTimeout { get; set; } = TimeSpan.FromMinutes(30);
         public ushort SendDelay { get; set; } = 50;

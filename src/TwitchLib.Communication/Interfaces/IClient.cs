@@ -26,6 +26,11 @@ namespace TwitchLib.Communication.Interfaces
         bool IsConnected { get; }
 
         /// <summary>
+        /// Client Configuration Options
+        /// </summary>
+        IClientOptions Options {get;}
+
+        /// <summary>
         /// Fires when the Client has connected
         /// </summary>
         event EventHandler<OnConnectedEventArgs> OnConnected;
@@ -92,12 +97,6 @@ namespace TwitchLib.Communication.Interfaces
         void Dispose();
 
         /// <summary>
-        /// Disposes the Client. Waits for current Messages in the Queue to be processed first.
-        /// </summary>
-        /// <param name="waitForSendsToComplete">Should wait or not. boolean.</param>
-        void Dispose(bool waitForSendsToComplete);
-
-        /// <summary>
         /// Connect the Client to the requested Url.
         /// </summary>
         /// <returns>Returns True if Connected, False if Failed to Connect.</returns>
@@ -121,5 +120,10 @@ namespace TwitchLib.Communication.Interfaces
         /// Manually reconnects the client.
         /// </summary>
         void Reconnect();
+
+        void MessageThrottled(OnMessageThrottledEventArgs eventArgs);
+        void SendFailed(OnSendFailedEventArgs eventArgs);
+        void Error(OnErrorEventArgs eventArgs);
+        void WhisperThrottled(OnWhisperThrottledEventArgs eventArgs);
     }
 }

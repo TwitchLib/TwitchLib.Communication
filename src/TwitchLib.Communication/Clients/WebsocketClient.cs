@@ -33,7 +33,7 @@ namespace TwitchLib.Communication.Clients
         public event EventHandler<OnStateChangedEventArgs> OnStateChanged;
         public event EventHandler<OnReconnectedEventArgs> OnReconnected;
 
-        private string Url { get; }
+        protected string Url { get; set; }
         private readonly Throttlers _throttlers;
         private CancellationTokenSource _tokenSource = new CancellationTokenSource();
         private bool _stopServices;

@@ -120,8 +120,10 @@ namespace TwitchLib.Communication.Clients
         public void Reconnect()
         {
             Close();
-            Open();
-            OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
+            if(Open())
+            {
+                OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
+            }
         }
 
         public bool Send(string message)

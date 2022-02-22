@@ -105,11 +105,15 @@ namespace TwitchLib.Communication.Clients
         
         public void Reconnect()
         {
-            Close();
-            if(Open())
+            Task.Run(() =>
             {
-                OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
-            }
+                Task.Delay(5).Wait();
+                Close();
+                if(Open())
+                {
+                    OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
+                }
+            });
         }
         
         public bool Send(string message)

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.WebSockets;
@@ -119,11 +120,15 @@ namespace TwitchLib.Communication.Clients
 
         public void Reconnect()
         {
-            Close();
-            if(Open())
+            Task.Run(() =>
             {
-                OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
-            }
+                Task.Delay(5).Wait();
+                Close();
+                if(Open())
+                {
+                    OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
+                }
+            });
         }
 
         public bool Send(string message)
@@ -199,6 +204,10 @@ namespace TwitchLib.Communication.Clients
                     try
                     {
                         var input = await _reader.ReadLineAsync();
+
+                        if (input is null)
+                            Send("PING");
+                        
                         OnMessage?.Invoke(this, new OnMessageEventArgs {Message = input});
                     }
                     catch (Exception ex)

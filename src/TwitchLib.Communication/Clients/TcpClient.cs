@@ -205,8 +205,11 @@ namespace TwitchLib.Communication.Clients
                     {
                         var input = await _reader.ReadLineAsync();
 
-                        if (input is null)
+                        if (input is null && IsConnected)
+                        {
                             Send("PING");
+                            Task.Delay(500).Wait();
+                        }
                         
                         OnMessage?.Invoke(this, new OnMessageEventArgs {Message = input});
                     }

@@ -122,7 +122,7 @@ namespace TwitchLib.Communication.Clients
         {
             Task.Run(() =>
             {
-                Task.Delay(5).Wait();
+                Task.Delay(20).Wait();
                 Close();
                 if(Open())
                 {
@@ -226,6 +226,7 @@ namespace TwitchLib.Communication.Clients
             return Task.Run(() =>
             {
                 var needsReconnect = false;
+                var notConnectedCounter = 0;
                 try
                 {
                     var lastState = IsConnected;
@@ -234,6 +235,16 @@ namespace TwitchLib.Communication.Clients
                         if (lastState == IsConnected)
                         {
                             Thread.Sleep(200);
+
+                            if (!IsConnected)
+                                notConnectedCounter++;
+                            
+                            else if (notConnectedCounter >= 50)
+                                Reconnect();
+                            
+                            else if (notConnectedCounter != 0 && IsConnected)
+                                notConnectedCounter = 0;
+                            
                             continue;
                         }
                         OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = IsConnected, WasConnected = lastState });

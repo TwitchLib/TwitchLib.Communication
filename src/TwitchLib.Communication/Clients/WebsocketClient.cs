@@ -240,7 +240,7 @@ namespace TwitchLib.Communication.Clients
                             if (!IsConnected)
                                 notConnectedCounter++;
                             
-                            else if (notConnectedCounter >= 50)
+                            else if (notConnectedCounter >= 25)
                                 Reconnect();
                             
                             else if (notConnectedCounter != 0 && IsConnected)

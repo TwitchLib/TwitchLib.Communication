@@ -14,6 +14,7 @@ namespace TwitchLib.Communication.Clients
 {
     public class WebSocketClient : IClient
     {
+        private int NotConnectedCounter;
         public TimeSpan DefaultKeepAliveInterval { get; set; }
         public int SendQueueLength => _throttlers.SendQueue.Count;
         public int WhisperQueueLength => _throttlers.WhisperQueue.Count;
@@ -227,7 +228,7 @@ namespace TwitchLib.Communication.Clients
             return Task.Run(() =>
             {
                 var needsReconnect = false;
-                var notConnectedCounter = 0;
+                var checkConnectedCounter = 0;
                 try
                 {
                     var lastState = IsConnected;
@@ -238,14 +239,36 @@ namespace TwitchLib.Communication.Clients
                             Thread.Sleep(200);
 
                             if (!IsConnected)
-                                notConnectedCounter++;
+                                NotConnectedCounter++;
+                            else
+                                checkConnectedCounter++;
                             
-                            else if (notConnectedCounter >= 25)
-                                Reconnect();
+                            if (checkConnectedCounter >= 300) //Check every 60s for Response
+                            {
+                                Send("PING");
+                                checkConnectedCounter = 0;
+                            }
                             
-                            else if (notConnectedCounter != 0 && IsConnected)
-                                notConnectedCounter = 0;
+                            switch (NotConnectedCounter)
+                            {
+                                case 25: //Try Reconnect after 5s
+                                case 75: //Try Reconnect after extra 10s
+                                case 150: //Try Reconnect after extra 15s
+                                case 300: //Try Reconnect after extra 30s
+                                case 600: //Try Reconnect after extra 60s
+                                    Reconnect();
+                                    break;
+                                default:
+                                {
+                                    if (NotConnectedCounter >= 1200 && NotConnectedCounter % 600 == 0) //Try Reconnect after every 120s from this point
+                                        Reconnect();
+                                    break;
+                                }
+                            }
                             
+                            if (NotConnectedCounter != 0 && IsConnected)
+                                NotConnectedCounter = 0;
+                                
                             continue;
                         }
                         OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = Client.State == WebSocketState.Open, WasConnected = lastState});

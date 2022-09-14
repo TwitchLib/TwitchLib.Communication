@@ -1,93 +1,34 @@
-﻿namespace TwitchLib.Communication.Models
+﻿using System;
+
+namespace TwitchLib.Communication.Models
 {
     public class ReconnectionPolicy
     {
-        private readonly int _reconnectStepInterval;
-        private readonly int? _initMaxAttempts;
-        private int _minReconnectInterval;
-        private readonly int _maxReconnectInterval;
-        private int? _maxAttempts;
-        private int _attemptsMade;
+        private int _currentAttempt;
+        private TimeSpan maxTimeout;
 
-        public ReconnectionPolicy()
+        public ReconnectionPolicy(TimeSpan? maxTimeout = null)
         {
-            _reconnectStepInterval = 3000;
-            _minReconnectInterval = 3000;
-            _maxReconnectInterval = 30000;
-            _maxAttempts = null;
-            _initMaxAttempts = null;
-            _attemptsMade = 0;
+            this.maxTimeout = maxTimeout ?? TimeSpan.FromMinutes(5);
         }
 
-        public void SetMaxAttempts(int attempts)
+        public TimeSpan GetTimeout()
         {
-            _maxAttempts = attempts;
+            var timeout = TimeSpan.FromSeconds(Math.Pow(2, _currentAttempt));
+
+            _currentAttempt++;
+
+            return timeout.CompareTo(maxTimeout) == -1 ? timeout : maxTimeout;
+        }
+
+        public int GetAttempt()
+        {
+            return _currentAttempt;
         }
 
         public void Reset()
         {
-            _attemptsMade = 0;
-            _minReconnectInterval = _reconnectStepInterval;
-            _maxAttempts = _initMaxAttempts;
+            _currentAttempt = 0;
         }
-
-        public void SetAttemptsMade(int count) => _attemptsMade = count;
-
-        public ReconnectionPolicy(int minReconnectInterval, int maxReconnectInterval, int? maxAttempts)
-        {
-            _reconnectStepInterval = minReconnectInterval;
-            _minReconnectInterval = minReconnectInterval > maxReconnectInterval
-                ? maxReconnectInterval
-                : minReconnectInterval;
-            _maxReconnectInterval = maxReconnectInterval;
-            _maxAttempts = maxAttempts;
-            _initMaxAttempts = maxAttempts;
-            _attemptsMade = 0;
-        }
-
-        public ReconnectionPolicy(int minReconnectInterval, int maxReconnectInterval)
-        {
-            _reconnectStepInterval = minReconnectInterval;
-            _minReconnectInterval = minReconnectInterval > maxReconnectInterval
-                ? maxReconnectInterval
-                : minReconnectInterval;
-            _maxReconnectInterval = maxReconnectInterval;
-            _maxAttempts = null;
-            _initMaxAttempts = null;
-            _attemptsMade = 0;
-        }
-
-        public ReconnectionPolicy(int reconnectInterval)
-        {
-            _reconnectStepInterval = reconnectInterval;
-            _minReconnectInterval = reconnectInterval;
-            _maxReconnectInterval = reconnectInterval;
-            _maxAttempts = null;
-            _initMaxAttempts = null;
-            _attemptsMade = 0;
-        }
-
-        public ReconnectionPolicy(int reconnectInterval, int? maxAttempts)
-        {
-            _reconnectStepInterval = reconnectInterval;
-            _minReconnectInterval = reconnectInterval;
-            _maxReconnectInterval = reconnectInterval;
-            _maxAttempts = maxAttempts;
-            _initMaxAttempts = maxAttempts;
-            _attemptsMade = 0;
-        }
-
-        internal void ProcessValues()
-        {
-            _attemptsMade++;
-            if (_minReconnectInterval < _maxReconnectInterval)
-                _minReconnectInterval += _reconnectStepInterval;
-            if (_minReconnectInterval > _maxReconnectInterval)
-                _minReconnectInterval = _maxReconnectInterval;
-        }
-
-        public int GetReconnectInterval() => _minReconnectInterval;
-
-        public bool AreAttemptsComplete() => _attemptsMade == _maxAttempts;
     }
 }

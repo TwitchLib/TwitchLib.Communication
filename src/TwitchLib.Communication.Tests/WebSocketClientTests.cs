@@ -29,7 +29,8 @@ namespace TwitchLib.Communication.Tests
         [Fact]
         public void Client_Raises_OnDisconnected_EventArgs()
         {
-            var client = new WebSocketClient(new ClientOptions() {DisconnectWait = 5000});
+            var client = new WebSocketClient(); 
+            //(Note) Removed new ClientOptions() {DisconnectWait = 5000} since i dont know where it was used and is not in use currently
             var pauseDisconnected = new ManualResetEvent(false);
 
             Assert.Raises<OnDisconnectedEventArgs>(

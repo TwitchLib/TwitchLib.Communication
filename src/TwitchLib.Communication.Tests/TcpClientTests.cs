@@ -1,4 +1,4 @@
-﻿using System.Threading;
+﻿/*using System.Threading;
 using System.Threading.Tasks;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Events;
@@ -110,4 +110,4 @@ namespace TwitchLib.Communication.Tests
                 });
         }
     }
-}
+}*/

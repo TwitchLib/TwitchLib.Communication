@@ -11,45 +11,45 @@ namespace TwitchLib.Communication.Services
 {
     public class Throttlers
     {
-        public readonly BlockingCollection<Tuple<DateTime, string>> SendQueue =
+        public readonly BlockingCollection<Tuple<DateTime, string>> MessageQueue =
             new BlockingCollection<Tuple<DateTime, string>>();
 
         public readonly BlockingCollection<Tuple<DateTime, string>> WhisperQueue =
             new BlockingCollection<Tuple<DateTime, string>>();
 
-        public bool Reconnecting { get; set; } = false;
-        public bool ShouldDispose { get; set; } = false;
         public CancellationTokenSource TokenSource { get; set; }
-        public bool ResetThrottlerRunning;
-        public bool ResetWhisperThrottlerRunning;
-        public int SentCount = 0;
-        public int WhispersSent = 0;
-        public Task ResetThrottler;
-        public Task ResetWhisperThrottler;
 
-        private readonly TimeSpan _throttlingPeriod;
-        private readonly TimeSpan _whisperThrottlingPeriod;
+        public int MessageSent = 0;
+        public int WhispersSent = 0;
+
+        public Task ResetMessageThrottler;
+        public Task ResetWhisperThrottler;
+        public bool ResetMessageThrottlerRunning;
+        public bool ResetWhisperThrottlerRunning;
+        public TimeSpan MessageThrottlingPeriod;
+        public TimeSpan WhisperThrottlingPeriod;
+
         private readonly IClient _client;
 
-        public Throttlers(IClient client, TimeSpan throttlingPeriod, TimeSpan whisperThrottlingPeriod)
+        public Throttlers(IClient client)
         {
-            _throttlingPeriod = throttlingPeriod;
-            _whisperThrottlingPeriod = whisperThrottlingPeriod;
             _client = client;
+            MessageThrottlingPeriod = _client.Options.MessageThrottlingPeriod;
+            WhisperThrottlingPeriod = _client.Options.WhisperThrottlingPeriod;
         }
 
         public void StartThrottlingWindowReset()
         {
-            ResetThrottler = Task.Run(async () =>
+            ResetMessageThrottler = Task.Run(async () =>
             {
-                ResetThrottlerRunning = true;
-                while (!ShouldDispose && !Reconnecting)
+                ResetMessageThrottlerRunning = true;
+                while (!TokenSource.IsCancellationRequested)
                 {
-                    Interlocked.Exchange(ref SentCount, 0);
-                    await Task.Delay(_throttlingPeriod, TokenSource.Token);
+                    Interlocked.Exchange(ref MessageSent, 0);
+                    await Task.Delay(MessageThrottlingPeriod, TokenSource.Token);
                 }
 
-                ResetThrottlerRunning = false;
+                ResetMessageThrottlerRunning = false;
                 return Task.CompletedTask;
             });
         }
@@ -59,10 +59,10 @@ namespace TwitchLib.Communication.Services
             ResetWhisperThrottler = Task.Run(async () =>
             {
                 ResetWhisperThrottlerRunning = true;
-                while (!ShouldDispose && !Reconnecting)
+                while (!TokenSource.IsCancellationRequested)
                 {
                     Interlocked.Exchange(ref WhispersSent, 0);
-                    await Task.Delay(_whisperThrottlingPeriod, TokenSource.Token);
+                    await Task.Delay(WhisperThrottlingPeriod, TokenSource.Token);
                 }
 
                 ResetWhisperThrottlerRunning = false;
@@ -70,45 +70,35 @@ namespace TwitchLib.Communication.Services
             });
         }
 
-        public void IncrementSentCount()
-        {
-            Interlocked.Increment(ref SentCount);
-        }
-
-        public void IncrementWhisperCount()
-        {
-            Interlocked.Increment(ref WhispersSent);
-        }
-
-        public Task StartSenderTask()
+        public Task StartMessageSenderTask()
         {
             StartThrottlingWindowReset();
-            
+
             return Task.Run(async () =>
             {
                 try
                 {
-                    while (!ShouldDispose)
+                    while (!TokenSource.IsCancellationRequested)
                     {
                         await Task.Delay(_client.Options.SendDelay);
 
-                        if (SentCount == _client.Options.MessagesAllowedInPeriod)
+                        if (MessageSent == _client.Options.MessagesAllowedInPeriod)
                         {
                             _client.MessageThrottled(new OnMessageThrottledEventArgs
                             {
                                 Message =
                                     "Message Throttle Occured. Too Many Messages within the period specified in WebsocketClientOptions.",
                                 AllowedInPeriod = _client.Options.MessagesAllowedInPeriod,
-                                Period = _client.Options.ThrottlingPeriod,
-                                SentMessageCount = Interlocked.CompareExchange(ref SentCount, 0, 0)
+                                Period = _client.Options.MessageThrottlingPeriod,
+                                SentMessageCount = Interlocked.CompareExchange(ref MessageSent, 0, 0)
                             });
 
                             continue;
                         }
 
-                        if (!_client.IsConnected || ShouldDispose) continue;
+                        if (!_client.IsConnected || TokenSource.IsCancellationRequested) continue;
 
-                        var msg = SendQueue.Take(TokenSource.Token);
+                        var msg = MessageQueue.Take(TokenSource.Token);
                         if (msg.Item1.Add(_client.Options.SendCacheItemTimeout) < DateTime.UtcNow) continue;
 
                         try
@@ -118,24 +108,24 @@ namespace TwitchLib.Communication.Services
                                 case WebSocketClient ws:
                                     await ws.SendAsync(Encoding.UTF8.GetBytes(msg.Item2));
                                     break;
-                                case TcpClient tcp:
+                                /*case TcpClient tcp:
                                     await tcp.SendAsync(msg.Item2);
-                                    break;
+                                    break;*/
                             }
 
-                            IncrementSentCount();
+                            Interlocked.Increment(ref MessageSent);
                         }
                         catch (Exception ex)
                         {
-                            _client.SendFailed(new OnSendFailedEventArgs {Data = msg.Item2, Exception = ex});
+                            _client.SendFailed(new OnSendFailedEventArgs { Data = msg.Item2, Exception = ex });
                             break;
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _client.SendFailed(new OnSendFailedEventArgs {Data = "", Exception = ex});
-                    _client.Error(new OnErrorEventArgs {Exception = ex});
+                    _client.SendFailed(new OnSendFailedEventArgs { Data = "", Exception = ex });
+                    _client.Error(new OnErrorEventArgs { Exception = ex });
                 }
             });
         }
@@ -143,12 +133,12 @@ namespace TwitchLib.Communication.Services
         public Task StartWhisperSenderTask()
         {
             StartWhisperThrottlingWindowReset();
-            
+
             return Task.Run(async () =>
             {
                 try
                 {
-                    while (!ShouldDispose)
+                    while (!TokenSource.IsCancellationRequested)
                     {
                         await Task.Delay(_client.Options.SendDelay);
 
@@ -166,7 +156,7 @@ namespace TwitchLib.Communication.Services
                             continue;
                         }
 
-                        if (!_client.IsConnected || ShouldDispose) continue;
+                        if (!_client.IsConnected || TokenSource.IsCancellationRequested) continue;
 
                         var msg = WhisperQueue.Take(TokenSource.Token);
                         if (msg.Item1.Add(_client.Options.SendCacheItemTimeout) < DateTime.UtcNow) continue;
@@ -178,24 +168,24 @@ namespace TwitchLib.Communication.Services
                                 case WebSocketClient ws:
                                     await ws.SendAsync(Encoding.UTF8.GetBytes(msg.Item2));
                                     break;
-                                case TcpClient tcp:
-                                    await tcp.SendAsync(msg.Item2);
-                                    break;
+                                //case TcpClient tcp:
+                                //    await tcp.SendAsync(msg.Item2);
+                                //    break;
                             }
 
-                            IncrementWhisperCount();
+                            Interlocked.Increment(ref WhispersSent);
                         }
                         catch (Exception ex)
                         {
-                            _client.SendFailed(new OnSendFailedEventArgs {Data = msg.Item2, Exception = ex});
+                            _client.SendFailed(new OnSendFailedEventArgs { Data = msg.Item2, Exception = ex });
                             break;
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _client.SendFailed(new OnSendFailedEventArgs {Data = "", Exception = ex});
-                    _client.Error(new OnErrorEventArgs {Exception = ex});
+                    _client.SendFailed(new OnSendFailedEventArgs { Data = "", Exception = ex });
+                    _client.Error(new OnErrorEventArgs { Exception = ex });
                 }
             });
         }

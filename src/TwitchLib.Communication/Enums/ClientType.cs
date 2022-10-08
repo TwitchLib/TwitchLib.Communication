@@ -4,5 +4,5 @@
     {
         Chat,
         PubSub
-    }
+    } 
 }

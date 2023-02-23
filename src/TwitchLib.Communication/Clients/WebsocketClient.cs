@@ -100,7 +100,10 @@ namespace TwitchLib.Communication.Clients
             Client?.Abort();
             _stopServices = callDisconnect;
             CleanupServices();
-            InitializeClient();
+            
+            if (!callDisconnect)
+                InitializeClient();
+            
             OnDisconnected?.Invoke(this, new OnDisconnectedEventArgs());
         }
         

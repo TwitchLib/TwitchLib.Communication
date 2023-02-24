@@ -1,12 +1,10 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Net.Security;
-using System.Net.Sockets;
-using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Interfaces;
 using TwitchLib.Communication.Models;
@@ -61,7 +59,7 @@ namespace TwitchLib.Communication.Clients
         private void InitializeClient()
         {
             // check if services should stop
-            if (this._stopServices) { return; }
+            if (_stopServices) return;
 
             Client = new System.Net.Sockets.TcpClient();
 
@@ -78,9 +76,9 @@ namespace TwitchLib.Communication.Clients
         {
             // reset some boolean values
             // especially _stopServices
-            this.Reset();
+            Reset();
             // now using private _Open()
-            return this._Open();
+            return _Open();
         }
 
         /// <summary>
@@ -90,18 +88,19 @@ namespace TwitchLib.Communication.Clients
         private bool _Open()
         {
             // check if services should stop
-            if (this._stopServices) { return false; }
+            if (_stopServices) return false;
 
             try
             {
                 if (IsConnected) return true;
 
-                Task.Run(() => { 
+                Task.Run(() =>
+                {
                     InitializeClient();
                     Client.Connect(_server, Port);
                     if (Options.UseSsl)
                     {
-                        var ssl = new SslStream(Client.GetStream(), false);
+                        SslStream ssl = new SslStream(Client.GetStream(), false);
                         ssl.AuthenticateAsClient(_server);
                         _reader = new StreamReader(ssl);
                         _writer = new StreamWriter(ssl);
@@ -142,9 +141,9 @@ namespace TwitchLib.Communication.Clients
         {
             // reset some boolean values
             // especially _stopServices
-            this.Reset();
+            Reset();
             // now using private _Reconnect()
-            this._Reconnect();
+            _Reconnect();
         }
 
         /// <summary>
@@ -154,7 +153,7 @@ namespace TwitchLib.Communication.Clients
         private void _Reconnect()
         {
             // check if services should stop
-            if (this._stopServices) { return; }
+            if (_stopServices) return;
 
             Task.Run(() =>
             {
@@ -182,7 +181,7 @@ namespace TwitchLib.Communication.Clients
             }
             catch (Exception ex)
             {
-                OnError?.Invoke(this, new OnErrorEventArgs {Exception = ex});
+                OnError?.Invoke(this, new OnErrorEventArgs { Exception = ex });
                 throw;
             }
         }
@@ -202,7 +201,7 @@ namespace TwitchLib.Communication.Clients
             }
             catch (Exception ex)
             {
-                OnError?.Invoke(this, new OnErrorEventArgs {Exception = ex});
+                OnError?.Invoke(this, new OnErrorEventArgs { Exception = ex });
                 throw;
             }
         }
@@ -239,7 +238,7 @@ namespace TwitchLib.Communication.Clients
                 {
                     try
                     {
-                        var input = await _reader.ReadLineAsync();
+                        string input = await _reader.ReadLineAsync();
 
                         if (input is null && IsConnected)
                         {
@@ -247,11 +246,11 @@ namespace TwitchLib.Communication.Clients
                             Task.Delay(500).Wait();
                         }
 
-                        OnMessage?.Invoke(this, new OnMessageEventArgs {Message = input});
+                        OnMessage?.Invoke(this, new OnMessageEventArgs { Message = input });
                     }
                     catch (Exception ex)
                     {
-                        OnError?.Invoke(this, new OnErrorEventArgs {Exception = ex});
+                        OnError?.Invoke(this, new OnErrorEventArgs { Exception = ex });
                     }
                 }
             });
@@ -261,11 +260,11 @@ namespace TwitchLib.Communication.Clients
         {
             return Task.Run(() =>
             {
-                var needsReconnect = false;
-                var checkConnectedCounter = 0;
+                bool needsReconnect = false;
+                int checkConnectedCounter = 0;
                 try
                 {
-                    var lastState = IsConnected;
+                    bool lastState = IsConnected;
                     while (!_tokenSource.IsCancellationRequested)
                     {
                         if (lastState == IsConnected)
@@ -325,7 +324,7 @@ namespace TwitchLib.Communication.Clients
                 }
                 catch (Exception ex)
                 {
-                    OnError?.Invoke(this, new OnErrorEventArgs {Exception = ex});
+                    OnError?.Invoke(this, new OnErrorEventArgs { Exception = ex });
                 }
 
                 if (needsReconnect && !_stopServices)
@@ -357,9 +356,9 @@ namespace TwitchLib.Communication.Clients
 
         private void Reset()
         {
-            this._stopServices = false;
-            this._throttlers.Reconnecting = false;
-            this._networkServicesRunning = false;
+            _stopServices = false;
+            _throttlers.Reconnecting = false;
+            _networkServicesRunning = false;
         }
 
         public void WhisperThrottled(OnWhisperThrottledEventArgs eventArgs)

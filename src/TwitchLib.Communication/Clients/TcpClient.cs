@@ -1,10 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Net.Security;
-using System.Net.Sockets;
-using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using TwitchLib.Communication.Events;
@@ -61,7 +58,7 @@ namespace TwitchLib.Communication.Clients
         private void InitializeClient()
         {
             // check if services should stop
-            if (this._stopServices) { return; }
+            if (_stopServices) { return; }
 
             Client = new System.Net.Sockets.TcpClient();
 
@@ -78,9 +75,9 @@ namespace TwitchLib.Communication.Clients
         {
             // reset some boolean values
             // especially _stopServices
-            this.Reset();
+            Reset();
             // now using private _Open()
-            return this._Open();
+            return _Open();
         }
 
         /// <summary>
@@ -90,7 +87,7 @@ namespace TwitchLib.Communication.Clients
         private bool _Open()
         {
             // check if services should stop
-            if (this._stopServices) { return false; }
+            if (_stopServices) { return false; }
 
             try
             {
@@ -142,9 +139,9 @@ namespace TwitchLib.Communication.Clients
         {
             // reset some boolean values
             // especially _stopServices
-            this.Reset();
+            Reset();
             // now using private _Reconnect()
-            this._Reconnect();
+            _Reconnect();
         }
 
         /// <summary>
@@ -154,13 +151,13 @@ namespace TwitchLib.Communication.Clients
         private void _Reconnect()
         {
             // check if services should stop
-            if (this._stopServices) { return; }
+            if (_stopServices) { return; }
 
             Task.Run(() =>
             {
                 Task.Delay(20).Wait();
                 Close();
-                if(_Open())
+                if(Open())
                 {
                     OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
                 }
@@ -357,9 +354,9 @@ namespace TwitchLib.Communication.Clients
 
         private void Reset()
         {
-            this._stopServices = false;
-            this._throttlers.Reconnecting = false;
-            this._networkServicesRunning = false;
+            _stopServices = false;
+            _throttlers.Reconnecting = false;
+            _networkServicesRunning = false;
         }
 
         public void WhisperThrottled(OnWhisperThrottledEventArgs eventArgs)

@@ -64,7 +64,7 @@ namespace TwitchLib.Communication.Clients
         private void InitializeClient()
         {
             // check if services should stop
-            if (this._stopServices) { return; }
+            if (_stopServices) { return; }
 
             Client?.Abort();
             Client = new ClientWebSocket();
@@ -81,9 +81,9 @@ namespace TwitchLib.Communication.Clients
         {
             // reset some boolean values
             // especially _stopServices
-            this.Reset();
+            Reset();
             // now using private _Open()
-            return this._Open();
+            return _Open();
         }
 
         /// <summary>
@@ -93,7 +93,7 @@ namespace TwitchLib.Communication.Clients
         private bool _Open()
         {
             // check if services should stop
-            if (this._stopServices) { return false; }
+            if (_stopServices) { return false; }
 
             try
             {
@@ -129,9 +129,9 @@ namespace TwitchLib.Communication.Clients
         {
             // reset some boolean values
             // especially _stopServices
-            this.Reset();
+            Reset();
             // now using private _Reconnect()
-            this._Reconnect();
+            _Reconnect();
         }
 
         /// <summary>
@@ -141,13 +141,13 @@ namespace TwitchLib.Communication.Clients
         private void _Reconnect()
         {
             // check if services should stop
-            if (this._stopServices) { return; }
+            if (_stopServices) { return; }
 
             Task.Run(() =>
             {
                 Task.Delay(20).Wait();
                 Close();
-                if(_Open())
+                if(Open())
                 {
                     OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
                 }

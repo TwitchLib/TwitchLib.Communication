@@ -39,7 +39,7 @@ namespace TwitchLib.Communication.Tests
                 {
                     client.OnConnected += async (sender, e) =>
                     {
-                        await Task.Delay(3000);
+                        await Task.Delay(2000);
                         client.Close();
                     };
                     client.OnDisconnected += (sender, e) =>
@@ -64,6 +64,7 @@ namespace TwitchLib.Communication.Tests
                 {
                     client.OnConnected += async (s, e) =>
                     {
+                        await Task.Delay(2000);
                         client.Reconnect();
                     };
 

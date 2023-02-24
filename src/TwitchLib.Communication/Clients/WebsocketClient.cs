@@ -143,16 +143,10 @@ namespace TwitchLib.Communication.Clients
         {
             // check if services should stop
             if (_stopServices) return;
-
-            Task.Run(() =>
+            if (_Open())
             {
-                Task.Delay(20).Wait();
-                Close();
-                if(_Open())
-                {
                     OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
                 }
-            });
         }
         
         public bool Send(string message)

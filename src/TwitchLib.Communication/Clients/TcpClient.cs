@@ -60,6 +60,9 @@ namespace TwitchLib.Communication.Clients
 
         private void InitializeClient()
         {
+            // check if services should stop
+            if (this._stopServices) { return; }
+
             Client = new System.Net.Sockets.TcpClient();
 
             if (_monitorTask == null)
@@ -73,29 +76,45 @@ namespace TwitchLib.Communication.Clients
 
         public bool Open()
         {
+            // reset some boolean values
+            // especially _stopServices
+            this.Reset();
+            // now using private _Open()
+            return this._Open();
+        }
+
+        /// <summary>
+        ///     for private use only,
+        ///     to be able to check <see cref="_stopServices"/> at the beginning
+        /// </summary>
+        private bool _Open()
+        {
+            // check if services should stop
+            if (this._stopServices) { return false; }
+
             try
             {
                 if (IsConnected) return true;
 
                 Task.Run(() => { 
-                InitializeClient();
-                Client.Connect(_server, Port);
-                if (Options.UseSsl)
-                {
-                    var ssl = new SslStream(Client.GetStream(), false);
-                    ssl.AuthenticateAsClient(_server);
-                    _reader = new StreamReader(ssl);
-                    _writer = new StreamWriter(ssl);
-                }
-                else
-                {
-                    _reader = new StreamReader(Client.GetStream());
-                    _writer = new StreamWriter(Client.GetStream());
-                }
+                    InitializeClient();
+                    Client.Connect(_server, Port);
+                    if (Options.UseSsl)
+                    {
+                        var ssl = new SslStream(Client.GetStream(), false);
+                        ssl.AuthenticateAsClient(_server);
+                        _reader = new StreamReader(ssl);
+                        _writer = new StreamWriter(ssl);
+                    }
+                    else
+                    {
+                        _reader = new StreamReader(Client.GetStream());
+                        _writer = new StreamWriter(Client.GetStream());
+                    }
                 }).Wait(10000);
 
-                if (!IsConnected) return Open();
-                
+                if (!IsConnected) return _Open();
+
                 StartNetworkServices();
                 return true;
 
@@ -121,11 +140,27 @@ namespace TwitchLib.Communication.Clients
 
         public void Reconnect()
         {
+            // reset some boolean values
+            // especially _stopServices
+            this.Reset();
+            // now using private _Reconnect()
+            this._Reconnect();
+        }
+
+        /// <summary>
+        ///     for private use only,
+        ///     to be able to check <see cref="_stopServices"/> at the beginning
+        /// </summary>
+        private void _Reconnect()
+        {
+            // check if services should stop
+            if (this._stopServices) { return; }
+
             Task.Run(() =>
             {
                 Task.Delay(20).Wait();
                 Close();
-                if(Open())
+                if(_Open())
                 {
                     OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
                 }
@@ -211,7 +246,7 @@ namespace TwitchLib.Communication.Clients
                             Send("PING");
                             Task.Delay(500).Wait();
                         }
-                        
+
                         OnMessage?.Invoke(this, new OnMessageEventArgs {Message = input});
                     }
                     catch (Exception ex)
@@ -241,13 +276,13 @@ namespace TwitchLib.Communication.Clients
                                 NotConnectedCounter++;
                             else
                                 checkConnectedCounter++;
-                            
+
                             if (checkConnectedCounter >= 300) //Check every 60s for Response
                             {
                                 Send("PING");
                                 checkConnectedCounter = 0;
                             }
-                            
+
                             switch (NotConnectedCounter)
                             {
                                 case 25: //Try Reconnect after 5s
@@ -255,19 +290,19 @@ namespace TwitchLib.Communication.Clients
                                 case 150: //Try Reconnect after extra 15s
                                 case 300: //Try Reconnect after extra 30s
                                 case 600: //Try Reconnect after extra 60s
-                                    Reconnect();
+                                    _Reconnect();
                                     break;
                                 default:
-                                {
-                                    if (NotConnectedCounter >= 1200 && NotConnectedCounter % 600 == 0) //Try Reconnect after every 120s from this point
-                                        Reconnect();
-                                    break;
-                                }
+                                    {
+                                        if (NotConnectedCounter >= 1200 && NotConnectedCounter % 600 == 0) //Try Reconnect after every 120s from this point
+                                            _Reconnect();
+                                        break;
+                                    }
                             }
-                            
+
                             if (NotConnectedCounter != 0 && IsConnected)
                                 NotConnectedCounter = 0;
-                                
+
                             continue;
                         }
                         OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = IsConnected, WasConnected = lastState });
@@ -294,7 +329,7 @@ namespace TwitchLib.Communication.Clients
                 }
 
                 if (needsReconnect && !_stopServices)
-                    Reconnect();
+                    _Reconnect();
             }, _tokenSource.Token);
         }
 
@@ -313,9 +348,18 @@ namespace TwitchLib.Communication.Clients
                 {
                     Reason = "Fatal network error. Network services fail to shut down."
                 });
-            _stopServices = false;
-            _throttlers.Reconnecting = false;
-            _networkServicesRunning = false;
+
+            // moved to Reset()
+            //_stopServices = false;
+            //_throttlers.Reconnecting = false;
+            //_networkServicesRunning = false;
+        }
+
+        private void Reset()
+        {
+            this._stopServices = false;
+            this._throttlers.Reconnecting = false;
+            this._networkServicesRunning = false;
         }
 
         public void WhisperThrottled(OnWhisperThrottledEventArgs eventArgs)

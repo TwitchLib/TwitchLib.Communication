@@ -63,6 +63,9 @@ namespace TwitchLib.Communication.Clients
 
         private void InitializeClient()
         {
+            // check if services should stop
+            if (this._stopServices) { return; }
+
             Client?.Abort();
             Client = new ClientWebSocket();
             
@@ -74,16 +77,31 @@ namespace TwitchLib.Communication.Clients
 
             if (_monitorTask.IsCompleted) _monitorTask = StartMonitorTask();
         }
-
         public bool Open()
         {
+            // reset some boolean values
+            // especially _stopServices
+            this.Reset();
+            // now using private _Open()
+            return this._Open();
+        }
+
+        /// <summary>
+        ///     for private use only,
+        ///     to be able to check <see cref="_stopServices"/> at the beginning
+        /// </summary>
+        private bool _Open()
+        {
+            // check if services should stop
+            if (this._stopServices) { return false; }
+
             try
             {
                 if (IsConnected) return true;
 
                 InitializeClient();
                 Client.ConnectAsync(new Uri(Url), _tokenSource.Token).Wait(10000);
-                if (!IsConnected) return Open();
+                if (!IsConnected) return _Open();
                 
                 StartNetworkServices();
                 return true;
@@ -106,14 +124,30 @@ namespace TwitchLib.Communication.Clients
             
             OnDisconnected?.Invoke(this, new OnDisconnectedEventArgs());
         }
-        
+
         public void Reconnect()
         {
+            // reset some boolean values
+            // especially _stopServices
+            this.Reset();
+            // now using private _Reconnect()
+            this._Reconnect();
+        }
+
+        /// <summary>
+        ///     for private use only,
+        ///     to be able to check <see cref="_stopServices"/> at the beginning
+        /// </summary>
+        private void _Reconnect()
+        {
+            // check if services should stop
+            if (this._stopServices) { return; }
+
             Task.Run(() =>
             {
                 Task.Delay(20).Wait();
                 Close();
-                if(Open())
+                if(_Open())
                 {
                     OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
                 }
@@ -259,12 +293,12 @@ namespace TwitchLib.Communication.Clients
                                 case 150: //Try Reconnect after extra 15s
                                 case 300: //Try Reconnect after extra 30s
                                 case 600: //Try Reconnect after extra 60s
-                                    Reconnect();
+                                    _Reconnect();
                                     break;
                                 default:
                                 {
                                     if (NotConnectedCounter >= 1200 && NotConnectedCounter % 600 == 0) //Try Reconnect after every 120s from this point
-                                        Reconnect();
+                                            _Reconnect();
                                     break;
                                 }
                             }
@@ -301,7 +335,7 @@ namespace TwitchLib.Communication.Clients
                 }
 
                 if (needsReconnect && !_stopServices)
-                    Reconnect();
+                    _Reconnect();
             }, _tokenSource.Token);
         }
 
@@ -320,11 +354,20 @@ namespace TwitchLib.Communication.Clients
                 {
                     Reason = "Fatal network error. Network services fail to shut down."
                 });
-            _stopServices = false;
-            _throttlers.Reconnecting = false;
-            _networkServicesRunning = false;
+
+            // moved to Reset()
+            //_stopServices = false;
+            //_throttlers.Reconnecting = false;
+            //_networkServicesRunning = false;
         }
-       
+        
+        private void Reset()
+        {
+            this._stopServices = false;
+            this._throttlers.Reconnecting = false;
+            this._networkServicesRunning = false;
+        }
+
         public void WhisperThrottled(OnWhisperThrottledEventArgs eventArgs)
         {
             OnWhisperThrottled?.Invoke(this, eventArgs);

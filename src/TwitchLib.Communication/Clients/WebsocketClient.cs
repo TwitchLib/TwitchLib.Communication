@@ -128,6 +128,9 @@ namespace TwitchLib.Communication.Clients
 
         public void Reconnect()
         {
+            if (IsConnected) Close();
+            // to ensure, everythings closed
+            Task.Delay(TimeSpan.FromSeconds(3)).Wait();
             // reset some boolean values
             // especially _stopServices
             Reset();

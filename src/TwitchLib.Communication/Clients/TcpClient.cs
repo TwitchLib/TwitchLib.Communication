@@ -347,11 +347,6 @@ namespace TwitchLib.Communication.Clients
                 {
                     Reason = "Fatal network error. Network services fail to shut down."
                 });
-
-            // moved to Reset()
-            //_stopServices = false;
-            //_throttlers.Reconnecting = false;
-            //_networkServicesRunning = false;
         }
 
         private void Reset()

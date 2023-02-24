@@ -4,6 +4,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 using TwitchLib.Communication.Enums;
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Interfaces;
@@ -64,7 +65,7 @@ namespace TwitchLib.Communication.Clients
         private void InitializeClient()
         {
             // check if services should stop
-            if (this._stopServices) { return; }
+            if (_stopServices) return;
 
             Client?.Abort();
             Client = new ClientWebSocket();
@@ -81,9 +82,9 @@ namespace TwitchLib.Communication.Clients
         {
             // reset some boolean values
             // especially _stopServices
-            this.Reset();
+            Reset();
             // now using private _Open()
-            return this._Open();
+            return _Open();
         }
 
         /// <summary>
@@ -93,7 +94,7 @@ namespace TwitchLib.Communication.Clients
         private bool _Open()
         {
             // check if services should stop
-            if (this._stopServices) { return false; }
+            if (_stopServices) return false;
 
             try
             {
@@ -129,9 +130,9 @@ namespace TwitchLib.Communication.Clients
         {
             // reset some boolean values
             // especially _stopServices
-            this.Reset();
+            Reset();
             // now using private _Reconnect()
-            this._Reconnect();
+            _Reconnect();
         }
 
         /// <summary>
@@ -141,7 +142,7 @@ namespace TwitchLib.Communication.Clients
         private void _Reconnect()
         {
             // check if services should stop
-            if (this._stopServices) { return; }
+            if (_stopServices) return;
 
             Task.Run(() =>
             {
@@ -218,12 +219,12 @@ namespace TwitchLib.Communication.Clients
         {
             return Task.Run(async () =>
             {
-                var message = "";
+                string message = "";
 
                 while (IsConnected && _networkServicesRunning)
                 {
                     WebSocketReceiveResult result;
-                    var buffer = new byte[1024];
+                    byte[] buffer = new byte[1024];
 
                     try
                     {
@@ -247,7 +248,7 @@ namespace TwitchLib.Communication.Clients
                             continue;
                         case WebSocketMessageType.Text:
                             message += Encoding.UTF8.GetString(buffer).TrimEnd('\0');
-                            OnMessage?.Invoke(this, new OnMessageEventArgs(){Message = message});
+                            OnMessage?.Invoke(this, new OnMessageEventArgs() { Message = message });
                             break;
                         case WebSocketMessageType.Binary:
                             break;
@@ -264,11 +265,11 @@ namespace TwitchLib.Communication.Clients
         {
             return Task.Run(() =>
             {
-                var needsReconnect = false;
-                var checkConnectedCounter = 0;
+                bool needsReconnect = false;
+                int checkConnectedCounter = 0;
                 try
                 {
-                    var lastState = IsConnected;
+                    bool lastState = IsConnected;
                     while (!_tokenSource.IsCancellationRequested)
                     {
                         if (lastState == IsConnected)
@@ -308,7 +309,7 @@ namespace TwitchLib.Communication.Clients
                                 
                             continue;
                         }
-                        OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = Client.State == WebSocketState.Open, WasConnected = lastState});
+                        OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = Client.State == WebSocketState.Open, WasConnected = lastState });
 
                         if (IsConnected)
                             OnConnected?.Invoke(this, new OnConnectedEventArgs());
@@ -348,7 +349,7 @@ namespace TwitchLib.Communication.Clients
             if (!_stopServices) return;
             if (!(_networkTasks?.Length > 0)) return;
             if (Task.WaitAll(_networkTasks, 15000)) return;
-           
+
             OnFatality?.Invoke(this,
                 new OnFatalErrorEventArgs
                 {
@@ -363,9 +364,9 @@ namespace TwitchLib.Communication.Clients
         
         private void Reset()
         {
-            this._stopServices = false;
-            this._throttlers.Reconnecting = false;
-            this._networkServicesRunning = false;
+            _stopServices = false;
+            _throttlers.Reconnecting = false;
+            _networkServicesRunning = false;
         }
 
         public void WhisperThrottled(OnWhisperThrottledEventArgs eventArgs)

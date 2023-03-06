@@ -85,12 +85,12 @@ namespace TwitchLib.Communication.Clients
             CancellationTokenSource = new CancellationTokenSource();
             Options = options ?? new ClientOptions();
             Throttler = new ThrottlerService(this,
-                                                  Options.MessageSendOptions,
-                                                  Options.WhisperSendOptions,
-                                                  logger);
+                                             Options.MessageSendOptions,
+                                             Options.WhisperSendOptions,
+                                             logger);
             NetworkServices = new NetworkServices(this,
-                                                       Throttler,
-                                                       logger);
+                                                  Throttler,
+                                                  logger);
         }
         #endregion ctor(s)
 
@@ -270,6 +270,10 @@ namespace TwitchLib.Communication.Clients
             LOGGER?.TraceMethodCall(GetType());
             try
             {
+                if (Token.IsCancellationRequested)
+                {
+                    return false;
+                }
                 if (IsConnected)
                 {
                     return true;

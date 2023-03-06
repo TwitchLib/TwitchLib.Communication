@@ -2,11 +2,24 @@
 
 namespace TwitchLib.Communication.Events
 {
-    public class OnMessageThrottledEventArgs : EventArgs
+
+    public class OnMessageThrottledEventArgs : EventArgs, IOnThrottledEventArgs
     {
-        public string Message { get; set; }
-        public int SentMessageCount { get; set; }
-        public TimeSpan Period { get; set; }
-        public int AllowedInPeriod { get; set; }
+        private IOnThrottledEventArgs OnThrottledEventArgs { get; }
+
+        public string Reason => OnThrottledEventArgs.Reason;
+
+        public string ItemNotSent => OnThrottledEventArgs.ItemNotSent;
+
+        public long SentCount => OnThrottledEventArgs.SentCount;
+
+        public TimeSpan Period => OnThrottledEventArgs.Period;
+
+        public uint AllowedInPeriod => OnThrottledEventArgs.AllowedInPeriod;
+
+        internal OnMessageThrottledEventArgs(IOnThrottledEventArgs onThrottledEventArgs)
+        {
+            OnThrottledEventArgs = onThrottledEventArgs;
+        }
     }
 }

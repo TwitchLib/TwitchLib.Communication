@@ -31,7 +31,10 @@
             _maxAttempts = _initMaxAttempts;
         }
 
-        public void SetAttemptsMade(int count) => _attemptsMade = count;
+        public void SetAttemptsMade(int count)
+        {
+            _attemptsMade = count;
+        }
 
         public ReconnectionPolicy(int minReconnectInterval, int maxReconnectInterval, int? maxAttempts)
         {
@@ -86,8 +89,14 @@
                 _minReconnectInterval = _maxReconnectInterval;
         }
 
-        public int GetReconnectInterval() => _minReconnectInterval;
+        public int GetReconnectInterval()
+        {
+            return _minReconnectInterval;
+        }
 
-        public bool AreAttemptsComplete() => _attemptsMade == _maxAttempts;
+        public bool AreAttemptsComplete()
+        {
+            return _attemptsMade == _maxAttempts;
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+
 using TwitchLib.Communication.Enums;
 using TwitchLib.Communication.Interfaces;
 

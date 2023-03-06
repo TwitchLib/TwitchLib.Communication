@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
+
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Interfaces;
 using TwitchLib.Communication.Models;
@@ -93,12 +94,13 @@ namespace TwitchLib.Communication.Clients
             {
                 if (IsConnected) return true;
 
-                Task.Run(() => { 
+                Task.Run(() =>
+                {
                     InitializeClient();
                     Client.Connect(_server, Port);
                     if (Options.UseSsl)
                     {
-                        var ssl = new SslStream(Client.GetStream(), false);
+                        SslStream ssl = new SslStream(Client.GetStream(), false);
                         ssl.AuthenticateAsClient(_server);
                         _reader = new StreamReader(ssl);
                         _writer = new StreamWriter(ssl);
@@ -157,7 +159,7 @@ namespace TwitchLib.Communication.Clients
             {
                 Task.Delay(20).Wait();
                 Close();
-                if(Open())
+                if (Open())
                 {
                     OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
                 }
@@ -179,7 +181,7 @@ namespace TwitchLib.Communication.Clients
             }
             catch (Exception ex)
             {
-                OnError?.Invoke(this, new OnErrorEventArgs {Exception = ex});
+                OnError?.Invoke(this, new OnErrorEventArgs { Exception = ex });
                 throw;
             }
         }
@@ -199,7 +201,7 @@ namespace TwitchLib.Communication.Clients
             }
             catch (Exception ex)
             {
-                OnError?.Invoke(this, new OnErrorEventArgs {Exception = ex});
+                OnError?.Invoke(this, new OnErrorEventArgs { Exception = ex });
                 throw;
             }
         }
@@ -236,7 +238,7 @@ namespace TwitchLib.Communication.Clients
                 {
                     try
                     {
-                        var input = await _reader.ReadLineAsync();
+                        string input = await _reader.ReadLineAsync();
 
                         if (input is null && IsConnected)
                         {
@@ -244,11 +246,11 @@ namespace TwitchLib.Communication.Clients
                             Task.Delay(500).Wait();
                         }
 
-                        OnMessage?.Invoke(this, new OnMessageEventArgs {Message = input});
+                        OnMessage?.Invoke(this, new OnMessageEventArgs { Message = input });
                     }
                     catch (Exception ex)
                     {
-                        OnError?.Invoke(this, new OnErrorEventArgs {Exception = ex});
+                        OnError?.Invoke(this, new OnErrorEventArgs { Exception = ex });
                     }
                 }
             });
@@ -258,11 +260,11 @@ namespace TwitchLib.Communication.Clients
         {
             return Task.Run(() =>
             {
-                var needsReconnect = false;
-                var checkConnectedCounter = 0;
+                bool needsReconnect = false;
+                int checkConnectedCounter = 0;
                 try
                 {
-                    var lastState = IsConnected;
+                    bool lastState = IsConnected;
                     while (!_tokenSource.IsCancellationRequested)
                     {
                         if (lastState == IsConnected)
@@ -322,7 +324,7 @@ namespace TwitchLib.Communication.Clients
                 }
                 catch (Exception ex)
                 {
-                    OnError?.Invoke(this, new OnErrorEventArgs {Exception = ex});
+                    OnError?.Invoke(this, new OnErrorEventArgs { Exception = ex });
                 }
 
                 if (needsReconnect && !_stopServices)

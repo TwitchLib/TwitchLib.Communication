@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Interfaces;
@@ -83,7 +84,7 @@ namespace TwitchLib.Communication.Services
         public Task StartSenderTask()
         {
             StartThrottlingWindowReset();
-            
+
             return Task.Run(async () =>
             {
                 try
@@ -108,7 +109,7 @@ namespace TwitchLib.Communication.Services
 
                         if (!_client.IsConnected || ShouldDispose) continue;
 
-                        var msg = SendQueue.Take(TokenSource.Token);
+                        Tuple<DateTime, string> msg = SendQueue.Take(TokenSource.Token);
                         if (msg.Item1.Add(_client.Options.SendCacheItemTimeout) < DateTime.UtcNow) continue;
 
                         try
@@ -127,15 +128,15 @@ namespace TwitchLib.Communication.Services
                         }
                         catch (Exception ex)
                         {
-                            _client.SendFailed(new OnSendFailedEventArgs {Data = msg.Item2, Exception = ex});
+                            _client.SendFailed(new OnSendFailedEventArgs { Data = msg.Item2, Exception = ex });
                             break;
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _client.SendFailed(new OnSendFailedEventArgs {Data = "", Exception = ex});
-                    _client.Error(new OnErrorEventArgs {Exception = ex});
+                    _client.SendFailed(new OnSendFailedEventArgs { Data = "", Exception = ex });
+                    _client.Error(new OnErrorEventArgs { Exception = ex });
                 }
             });
         }
@@ -143,7 +144,7 @@ namespace TwitchLib.Communication.Services
         public Task StartWhisperSenderTask()
         {
             StartWhisperThrottlingWindowReset();
-            
+
             return Task.Run(async () =>
             {
                 try
@@ -168,7 +169,7 @@ namespace TwitchLib.Communication.Services
 
                         if (!_client.IsConnected || ShouldDispose) continue;
 
-                        var msg = WhisperQueue.Take(TokenSource.Token);
+                        Tuple<DateTime, string> msg = WhisperQueue.Take(TokenSource.Token);
                         if (msg.Item1.Add(_client.Options.SendCacheItemTimeout) < DateTime.UtcNow) continue;
 
                         try
@@ -187,15 +188,15 @@ namespace TwitchLib.Communication.Services
                         }
                         catch (Exception ex)
                         {
-                            _client.SendFailed(new OnSendFailedEventArgs {Data = msg.Item2, Exception = ex});
+                            _client.SendFailed(new OnSendFailedEventArgs { Data = msg.Item2, Exception = ex });
                             break;
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _client.SendFailed(new OnSendFailedEventArgs {Data = "", Exception = ex});
-                    _client.Error(new OnErrorEventArgs {Exception = ex});
+                    _client.SendFailed(new OnSendFailedEventArgs { Data = "", Exception = ex });
+                    _client.Error(new OnErrorEventArgs { Exception = ex });
                 }
             });
         }

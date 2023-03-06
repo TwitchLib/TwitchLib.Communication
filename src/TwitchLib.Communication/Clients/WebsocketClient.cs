@@ -4,6 +4,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 using TwitchLib.Communication.Enums;
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Interfaces;
@@ -41,7 +42,7 @@ namespace TwitchLib.Communication.Clients
         private bool _networkServicesRunning;
         private Task[] _networkTasks;
         private Task _monitorTask;
-        
+
         public WebSocketClient(IClientOptions options = null)
         {
             Options = options ?? new ClientOptions();
@@ -68,7 +69,7 @@ namespace TwitchLib.Communication.Clients
 
             Client?.Abort();
             Client = new ClientWebSocket();
-            
+
             if (_monitorTask == null)
             {
                 _monitorTask = StartMonitorTask();
@@ -102,7 +103,7 @@ namespace TwitchLib.Communication.Clients
                 InitializeClient();
                 Client.ConnectAsync(new Uri(Url), _tokenSource.Token).Wait(10000);
                 if (!IsConnected) return _Open();
-                
+
                 StartNetworkServices();
                 return true;
             }
@@ -118,10 +119,10 @@ namespace TwitchLib.Communication.Clients
             Client?.Abort();
             _stopServices = callDisconnect;
             CleanupServices();
-            
+
             if (!callDisconnect)
                 InitializeClient();
-            
+
             OnDisconnected?.Invoke(this, new OnDisconnectedEventArgs());
         }
 
@@ -147,13 +148,13 @@ namespace TwitchLib.Communication.Clients
             {
                 Task.Delay(20).Wait();
                 Close();
-                if(Open())
+                if (Open())
                 {
                     OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
                 }
             });
         }
-        
+
         public bool Send(string message)
         {
             try
@@ -173,7 +174,7 @@ namespace TwitchLib.Communication.Clients
                 throw;
             }
         }
-        
+
         public bool SendWhisper(string message)
         {
             try
@@ -193,7 +194,7 @@ namespace TwitchLib.Communication.Clients
                 throw;
             }
         }
-        
+
         private void StartNetworkServices()
         {
             _networkServicesRunning = true;
@@ -218,12 +219,12 @@ namespace TwitchLib.Communication.Clients
         {
             return Task.Run(async () =>
             {
-                var message = "";
+                string message = "";
 
                 while (IsConnected && _networkServicesRunning)
                 {
                     WebSocketReceiveResult result;
-                    var buffer = new byte[1024];
+                    byte[] buffer = new byte[1024];
 
                     try
                     {
@@ -247,14 +248,14 @@ namespace TwitchLib.Communication.Clients
                             continue;
                         case WebSocketMessageType.Text:
                             message += Encoding.UTF8.GetString(buffer).TrimEnd('\0');
-                            OnMessage?.Invoke(this, new OnMessageEventArgs(){Message = message});
+                            OnMessage?.Invoke(this, new OnMessageEventArgs() { Message = message });
                             break;
                         case WebSocketMessageType.Binary:
                             break;
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
-                    
+
                     message = "";
                 }
             });
@@ -264,11 +265,11 @@ namespace TwitchLib.Communication.Clients
         {
             return Task.Run(() =>
             {
-                var needsReconnect = false;
-                var checkConnectedCounter = 0;
+                bool needsReconnect = false;
+                int checkConnectedCounter = 0;
                 try
                 {
-                    var lastState = IsConnected;
+                    bool lastState = IsConnected;
                     while (!_tokenSource.IsCancellationRequested)
                     {
                         if (lastState == IsConnected)
@@ -279,13 +280,13 @@ namespace TwitchLib.Communication.Clients
                                 NotConnectedCounter++;
                             else
                                 checkConnectedCounter++;
-                            
+
                             if (checkConnectedCounter >= 300) //Check every 60s for Response
                             {
                                 Send("PING");
                                 checkConnectedCounter = 0;
                             }
-                            
+
                             switch (NotConnectedCounter)
                             {
                                 case 25: //Try Reconnect after 5s
@@ -296,19 +297,19 @@ namespace TwitchLib.Communication.Clients
                                     _Reconnect();
                                     break;
                                 default:
-                                {
-                                    if (NotConnectedCounter >= 1200 && NotConnectedCounter % 600 == 0) //Try Reconnect after every 120s from this point
+                                    {
+                                        if (NotConnectedCounter >= 1200 && NotConnectedCounter % 600 == 0) //Try Reconnect after every 120s from this point
                                             _Reconnect();
-                                    break;
-                                }
+                                        break;
+                                    }
                             }
-                            
+
                             if (NotConnectedCounter != 0 && IsConnected)
                                 NotConnectedCounter = 0;
-                                
+
                             continue;
                         }
-                        OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = Client.State == WebSocketState.Open, WasConnected = lastState});
+                        OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = Client.State == WebSocketState.Open, WasConnected = lastState });
 
                         if (IsConnected)
                             OnConnected?.Invoke(this, new OnConnectedEventArgs());
@@ -320,7 +321,7 @@ namespace TwitchLib.Communication.Clients
                                 needsReconnect = true;
                                 break;
                             }
-                            
+
                             OnDisconnected?.Invoke(this, new OnDisconnectedEventArgs());
                             if (Client.CloseStatus != null && Client.CloseStatus != WebSocketCloseStatus.NormalClosure)
                                 OnError?.Invoke(this, new OnErrorEventArgs { Exception = new Exception(Client.CloseStatus + " " + Client.CloseStatusDescription) });
@@ -344,11 +345,11 @@ namespace TwitchLib.Communication.Clients
             _tokenSource.Cancel();
             _tokenSource = new CancellationTokenSource();
             _throttlers.TokenSource = _tokenSource;
-            
+
             if (!_stopServices) return;
             if (!(_networkTasks?.Length > 0)) return;
             if (Task.WaitAll(_networkTasks, 15000)) return;
-           
+
             OnFatality?.Invoke(this,
                 new OnFatalErrorEventArgs
                 {
@@ -360,12 +361,12 @@ namespace TwitchLib.Communication.Clients
             //_throttlers.Reconnecting = false;
             //_networkServicesRunning = false;
         }
-        
+
         private void Reset()
         {
-            this._stopServices = false;
-            this._throttlers.Reconnecting = false;
-            this._networkServicesRunning = false;
+            _stopServices = false;
+            _throttlers.Reconnecting = false;
+            _networkServicesRunning = false;
         }
 
         public void WhisperThrottled(OnWhisperThrottledEventArgs eventArgs)

@@ -1,4 +1,5 @@
 ﻿using System;
+
 using TwitchLib.Communication.Events;
 
 namespace TwitchLib.Communication.Interfaces
@@ -19,7 +20,7 @@ namespace TwitchLib.Communication.Interfaces
         /// The current number of Whispers waiting to be sent.
         /// </summary>
         int WhisperQueueLength { get; }
-        
+
         /// <summary>
         /// The current state of the connection.
         /// </summary>
@@ -28,13 +29,13 @@ namespace TwitchLib.Communication.Interfaces
         /// <summary>
         /// Client Configuration Options
         /// </summary>
-        IClientOptions Options {get;}
+        IClientOptions Options { get; }
 
         /// <summary>
         /// Fires when the Client has connected
         /// </summary>
         event EventHandler<OnConnectedEventArgs> OnConnected;
-        
+
         /// <summary>
         /// Fires when Data (ByteArray) is received.
         /// </summary>
@@ -90,7 +91,7 @@ namespace TwitchLib.Communication.Interfaces
         /// <param name="callDisconnect">Set disconnect called in the client. Used in test cases. (default true)</param>
         /// </summary>
         void Close(bool callDisconnect = true);
-        
+
         /// <summary>
         /// Dispose the Client. Forces the Send Queue to be destroyed, resulting in Message Loss.
         /// </summary>

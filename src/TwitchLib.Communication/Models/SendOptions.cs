@@ -8,35 +8,35 @@ namespace TwitchLib.Communication.Models
     public class SendOptions : ISendOptions
     {
         /// <summary>
-        ///     <inheritdoc cref="ISendOptions.MessagesAllowedInPeriod"/>
+        ///     <inheritdoc cref="ISendOptions.SendsAllowedInPeriod"/>
         /// </summary>
-        public uint MessagesAllowedInPeriod { get; }
+        public uint SendsAllowedInPeriod { get; }
         /// <summary>
-        ///     <inheritdoc cref="ISendOptions.SendQueueCapacity"/>
+        ///     <inheritdoc cref="ISendOptions.QueueCapacity"/>
         /// </summary>
-        public uint SendQueueCapacity { get; }
+        public uint QueueCapacity { get; }
         /// <summary>
-        ///     <inheritdoc cref="ISendOptions.SendCacheItemTimeout"/>
+        ///     <inheritdoc cref="ISendOptions.CacheItemTimeout"/>
         /// </summary>
-        public TimeSpan SendCacheItemTimeout { get; }
+        public TimeSpan CacheItemTimeout { get; }
         /// <summary>
         /// </summary>
-        /// <param name="messagesAllowedInPeriod">
-        ///     <inheritdoc cref="MessagesAllowedInPeriod"/>
+        /// <param name="sendsAllowedInPeriod">
+        ///     <inheritdoc cref="SendsAllowedInPeriod"/>
         /// </param>
-        /// <param name="sendQueueCapacity">
-        ///     <inheritdoc cref="SendQueueCapacity"/>
+        /// <param name="queueCapacity">
+        ///     <inheritdoc cref="QueueCapacity"/>
         /// </param>
-        /// <param name="sendCacheItemTimeoutInMinutes">
-        ///     <inheritdoc cref="SendCacheItemTimeout"/>
+        /// <param name="cacheItemTimeoutInMinutes">
+        ///     <inheritdoc cref="CacheItemTimeout"/>
         /// </param>
-        public SendOptions(uint messagesAllowedInPeriod,
-                           uint sendQueueCapacity = 10_000,
-                           uint sendCacheItemTimeoutInMinutes = 30)
+        public SendOptions(uint sendsAllowedInPeriod,
+                           uint queueCapacity = 10_000,
+                           uint cacheItemTimeoutInMinutes = 30)
         {
-            MessagesAllowedInPeriod = messagesAllowedInPeriod;
-            SendQueueCapacity = sendQueueCapacity;
-            SendCacheItemTimeout = TimeSpan.FromMinutes(sendCacheItemTimeoutInMinutes);
+            SendsAllowedInPeriod = sendsAllowedInPeriod;
+            QueueCapacity = queueCapacity;
+            CacheItemTimeout = TimeSpan.FromMinutes(cacheItemTimeoutInMinutes);
         }
     }
 }

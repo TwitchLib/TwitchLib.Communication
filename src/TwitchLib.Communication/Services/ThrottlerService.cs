@@ -84,7 +84,7 @@ namespace TwitchLib.Communication.Services
             {
                 ConcurrentQueue<Tuple<DateTime, string>> queue = Queues[messageType];
                 ISendOptions sendOptions = Options[messageType];
-                if (!Client.IsConnected || queue.Count >= sendOptions.SendQueueCapacity)
+                if (!Client.IsConnected || queue.Count >= sendOptions.QueueCapacity)
                 {
                     return false;
                 }
@@ -146,7 +146,7 @@ namespace TwitchLib.Communication.Services
             long localSentCount = ReadSentCount(messageType);
             try
             {
-                if (localSentCount >= options.MessagesAllowedInPeriod)
+                if (localSentCount >= options.SendsAllowedInPeriod)
                 {
                     Throttle(messageType,
                              msg?.Item2,
@@ -159,7 +159,7 @@ namespace TwitchLib.Communication.Services
                 {
                     return;
                 }
-                if (msg.Item1.Add(options.SendCacheItemTimeout) < DateTime.UtcNow)
+                if (msg.Item1.Add(options.CacheItemTimeout) < DateTime.UtcNow)
                 {
                     return;
                 }
@@ -222,7 +222,7 @@ namespace TwitchLib.Communication.Services
             {
                 ItemNotSent = itemNotSent,
                 Reason = msg,
-                AllowedInPeriod = options.MessagesAllowedInPeriod,
+                AllowedInPeriod = options.SendsAllowedInPeriod,
                 Period = Client.Options.ThrottlingPeriod,
                 SentCount = sentCount
             };

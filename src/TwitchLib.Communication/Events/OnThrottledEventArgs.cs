@@ -2,13 +2,12 @@
 
 namespace TwitchLib.Communication.Events
 {
-
-    public abstract class AOnThrottledEventArgs : EventArgs
+    /// <summary>
+    ///     used for <see cref="OnMessageThrottledEventArgs"/> and <see cref="OnWhisperThrottledEventArgs"/>
+    /// </summary>
+    internal class OnThrottledEventArgs : IOnThrottledEventArgs
     {
         public string Reason { get; set; }
-        /// <summary>
-        ///     the Message or the Whisper that has been throttled
-        /// </summary>
         public string ItemNotSent { get; set; }
         public long SentCount { get; set; }
         public TimeSpan Period { get; set; }

@@ -106,9 +106,9 @@ namespace TwitchLib.Communication.Services
         {
             LOGGER?.TraceMethodCall(GetType());
             ResetThrottlingWindowTimer = new Timer(ResetCallback,
-                                                        null,
-                                                        TimeSpan.FromSeconds(0),
-                                                        TimeSpan.FromSeconds(20));
+                                                   null,
+                                                   TimeSpan.FromSeconds(0),
+                                                   TimeSpan.FromSeconds(20));
         }
         [SuppressMessage("Style", "IDE0058")]
         private void ResetCallback(object state)
@@ -149,9 +149,9 @@ namespace TwitchLib.Communication.Services
                 if (localSentCount >= options.MessagesAllowedInPeriod)
                 {
                     Throttle(messageType,
-                                  msg?.Item2,
-                                  options,
-                                  localSentCount);
+                             msg?.Item2,
+                             options,
+                             localSentCount);
                     return;
                 }
                 bool taken = queue.TryDequeue(out msg);
@@ -218,27 +218,21 @@ namespace TwitchLib.Communication.Services
             LOGGER?.TraceMethodCall(GetType());
             LOGGER?.TraceAction(GetType(), "Message throttled");
             string msg = $"{messageType} Throttle Occured. Too Many {messageType}s within the period specified in WebsocketClientOptions.";
+            IOnThrottledEventArgs onThrottledEventArgs = new OnThrottledEventArgs
+            {
+                ItemNotSent = itemNotSent,
+                Reason = msg,
+                AllowedInPeriod = options.MessagesAllowedInPeriod,
+                Period = Client.Options.ThrottlingPeriod,
+                SentCount = sentCount
+            };
             if (MessageType.Message == messageType)
             {
-                Client.RaiseMessageThrottled(new OnMessageThrottledEventArgs
-                {
-                    ItemNotSent = itemNotSent,
-                    Reason = msg,
-                    AllowedInPeriod = options.MessagesAllowedInPeriod,
-                    Period = Client.Options.ThrottlingPeriod,
-                    SentCount = sentCount
-                });
+                Client.RaiseMessageThrottled(new OnMessageThrottledEventArgs(onThrottledEventArgs));
             }
             else if (MessageType.Whisper == messageType)
             {
-                Client.RaiseWhisperThrottled(new OnWhisperThrottledEventArgs
-                {
-                    ItemNotSent = itemNotSent,
-                    Reason = msg,
-                    AllowedInPeriod = options.MessagesAllowedInPeriod,
-                    Period = Client.Options.ThrottlingPeriod,
-                    SentCount = sentCount
-                });
+                Client.RaiseWhisperThrottled(new OnWhisperThrottledEventArgs(onThrottledEventArgs));
             }
         }
         #endregion Actions for NetworkServices: Messages

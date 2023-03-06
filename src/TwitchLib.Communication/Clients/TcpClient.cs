@@ -48,12 +48,7 @@ namespace TwitchLib.Communication.Clients
             // this is not thread safe,
             // but the throttler service is the only one,
             // that may call ist and calls it!
-
-
-            // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.networkstream?view=net-7.0#remarks
-            // we need a lock right here,
-            // because we have more then one thread writing to the underlying NetworkStream
-            // for sending Messages and for sending Whispers
+            // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.networkstream?view=netstandard-2.0#remarks
             //lock (this.sync) {
             if (Writer == null)
             {

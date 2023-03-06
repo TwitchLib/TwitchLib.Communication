@@ -57,16 +57,13 @@ namespace TwitchLib.Communication.Clients
 
             // this is not thread safe,
             // but the throttler service is the only one,
-            // that may call ist and calls it!
+            // that may call it and calls it!
 
 
             // https://stackoverflow.com/a/59619916
             // links from within this thread:
             // the 4th point: https://www.codetinkerer.com/2018/06/05/aspnet-core-websockets.html
             // https://github.com/dotnet/corefx/blob/d6b11250b5113664dd3701c25bdf9addfacae9cc/src/Common/src/System/Net/WebSockets/ManagedWebSocket.cs#L22-L28
-            // we need a lock right here,
-            // because we have more then one thread writing to the underlying NetworkStream
-            // for sending Messages and for sending Whispers
             //lock (this.sync) {
             if (Client == null)
             {

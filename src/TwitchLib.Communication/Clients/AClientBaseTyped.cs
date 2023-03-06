@@ -53,7 +53,7 @@ namespace TwitchLib.Communication.Clients
 
         #region ctors
         internal AClientBaseTyped(IClientOptions options = null,
-                         ILogger logger = null) : base(options, logger)
+                                  ILogger logger = null) : base(options, logger)
         {
             // INFO: Feedback by Bukk94: not to restrict the Client to those two known types
             //if (typeof(T) != typeof(System.Net.WebSockets.ClientWebSocket)

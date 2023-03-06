@@ -69,8 +69,7 @@ namespace TwitchLib.Communication.Clients
         #region properties private
         /// <summary>
         ///     this <see cref="CancellationTokenSource"/> is used for <see cref="NetworkServices.ListenTask"/>
-        ///     whenever a call to <see cref="CancellationTokenSource.Cancel()"/> is made,
-        ///     the <see cref="Task"/>s listed above are cancelled
+        ///     whenever a call to <see cref="CancellationTokenSource.Cancel()"/> is made
         /// </summary>
         private CancellationTokenSource CancellationTokenSource { get; set; }
         private ThrottlerService Throttler { get; }
@@ -97,6 +96,9 @@ namespace TwitchLib.Communication.Clients
 
 
         #region invoker/raiser internal
+        /// <summary>
+        ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
+        /// </summary>
         internal void RaiseWhisperThrottled(OnWhisperThrottledEventArgs eventArgs)
         {
             LOGGER?.TraceMethodCall(GetType());
@@ -107,6 +109,9 @@ namespace TwitchLib.Communication.Clients
             OnWhisperThrottled?.Invoke(this, eventArgs);
         }
 
+        /// <summary>
+        ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
+        /// </summary>
         internal void RaiseMessageThrottled(OnMessageThrottledEventArgs eventArgs)
         {
             LOGGER?.TraceMethodCall(GetType());
@@ -117,6 +122,9 @@ namespace TwitchLib.Communication.Clients
             OnMessageThrottled?.Invoke(this, eventArgs);
         }
 
+        /// <summary>
+        ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
+        /// </summary>
         internal void RaiseSendFailed(OnSendFailedEventArgs eventArgs)
         {
             LOGGER?.TraceMethodCall(GetType());
@@ -127,6 +135,9 @@ namespace TwitchLib.Communication.Clients
             OnSendFailed?.Invoke(this, eventArgs);
         }
 
+        /// <summary>
+        ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
+        /// </summary>
         internal void RaiseError(OnErrorEventArgs eventArgs)
         {
             LOGGER?.TraceMethodCall(GetType());
@@ -136,6 +147,9 @@ namespace TwitchLib.Communication.Clients
             }
             OnError?.Invoke(this, eventArgs);
         }
+        /// <summary>
+        ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
+        /// </summary>
         internal void RaiseReconnected()
         {
             LOGGER?.TraceMethodCall(GetType());
@@ -145,6 +159,9 @@ namespace TwitchLib.Communication.Clients
             }
             OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
         }
+        /// <summary>
+        ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
+        /// </summary>
         internal void RaiseMessage(OnMessageEventArgs eventArgs)
         {
             LOGGER?.TraceMethodCall(GetType());
@@ -154,23 +171,22 @@ namespace TwitchLib.Communication.Clients
             }
             OnMessage?.Invoke(this, eventArgs);
         }
-        internal void RaiseFatal()
+        /// <summary>
+        ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
+        /// </summary>
+        internal void RaiseFatal(Exception e = null)
         {
             LOGGER?.TraceMethodCall(GetType());
             if (Token.IsCancellationRequested)
             {
                 return;
             }
-            OnFatality?.Invoke(this, new OnFatalErrorEventArgs("Fatal network error."));
-        }
-        internal void RaiseFatal(Exception e)
-        {
-            LOGGER?.TraceMethodCall(GetType());
-            if (Token.IsCancellationRequested)
+            OnFatalErrorEventArgs onFatalErrorEventArgs = new OnFatalErrorEventArgs("Fatal network error.");
+            if (e != null)
             {
-                return;
+                onFatalErrorEventArgs = new OnFatalErrorEventArgs(e);
             }
-            OnFatality?.Invoke(this, new OnFatalErrorEventArgs(e));
+            OnFatality?.Invoke(this, onFatalErrorEventArgs);
         }
         internal void RaiseDisconnected()
         {
@@ -303,8 +319,11 @@ namespace TwitchLib.Communication.Clients
             }
         }
         /// <summary>
-        ///     stops <see cref="NetworkServices.SendWhisperTask"/>
+        ///     stops <see cref="NetworkServices.ListenTask"/>
         ///     by calling <see cref="CancellationTokenSource.Cancel()"/>
+        ///     <br></br>
+        ///     <br></br>
+        ///     and enforces the <see cref="SpecificClientClose()"/>
         ///     <br></br>
         ///     <br></br>
         ///     afterwards it waits for the via <see cref="IClientOptions.DisconnectWait"/> given amount of milliseconds
@@ -322,6 +341,9 @@ namespace TwitchLib.Communication.Clients
             LOGGER?.TraceAction(GetType(), $"{nameof(CancellationTokenSource)}.{nameof(CancellationTokenSource.Cancel)} is called");
             SpecificClientClose();
             RaiseDisconnected();
+            // only here and in the ctor.
+            // ctor: initial
+            // further flow: after everything is closed
             CancellationTokenSource = new CancellationTokenSource();
             Task.Delay(TimeSpan.FromMilliseconds(Options.DisconnectWait)).GetAwaiter().GetResult();
         }

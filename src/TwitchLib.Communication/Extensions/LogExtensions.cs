@@ -5,7 +5,9 @@ using Microsoft.Extensions.Logging;
 
 namespace TwitchLib.Communication.Extensions
 {
-
+    /// <summary>
+    ///     expensive Extensions of the <see cref="ILogger"/>
+    /// </summary>
     internal static class LogExtensions
     {
         public static void TraceMethodCall(this ILogger logger,

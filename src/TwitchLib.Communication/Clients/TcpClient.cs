@@ -145,12 +145,10 @@ namespace TwitchLib.Communication.Clients
                 // by using the fully qualified name
                 using (System.Threading.CancellationTokenSource delayTaskCancellationTokenSource = new System.Threading.CancellationTokenSource())
                 {
-                    Task connectTask = Client.ConnectAsync(URL,
-                                                           Port);
+                    Task connectTask = Client.ConnectAsync(URL, Port);
                     Task delayTask = Task.Delay((int) TimeOutEstablishConnection.TotalMilliseconds,
                                                 delayTaskCancellationTokenSource.Token);
-                    Task<Task> task = Task.WhenAny(connectTask,
-                                                   delayTask);
+                    Task<Task> task = Task.WhenAny(connectTask, delayTask);
                     // though 'theTaskThatCompletedFirst' is unused, just to be precise...
                     Task theTaskThatCompletedFirst = task.GetAwaiter().GetResult();
                     delayTaskCancellationTokenSource?.Cancel();
@@ -190,7 +188,7 @@ namespace TwitchLib.Communication.Clients
             LOGGER?.TraceMethodCall(GetType());
             System.Net.Sockets.TcpClient tcpClient = new System.Net.Sockets.TcpClient
             {
-                // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient.lingerstate?view=net-7.0#remarks
+                // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient.lingerstate?view=netstandard-2.0#remarks
                 LingerState = new System.Net.Sockets.LingerOption(true, 0)
             };
             return tcpClient;

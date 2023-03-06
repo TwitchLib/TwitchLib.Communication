@@ -33,6 +33,10 @@ namespace TwitchLib.Communication.Services
         private AClientBase Client { get; }
         private CancellationToken Token => Client.Token;
         private Timer ResetThrottlingWindowTimer { get; set; }
+        /// <summary>
+        ///     get is never used, cause the <see cref="Task"/> is canceled by the <see cref="Token"/>
+        /// </summary>
+        [SuppressMessage("Style", "IDE0052")]
         private Task SendTask { get; set; }
         #endregion properties private
 

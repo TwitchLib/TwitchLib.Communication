@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,10 @@ namespace TwitchLib.Communication.Services
         #region properties private: Tasks/Timers
         // each Task is held in its own variable to be more precise
 
+        /// <summary>
+        ///     get is never used, cause the <see cref="Task"/> is canceled by the <see cref="Token"/>
+        /// </summary>
+        [SuppressMessage("Style", "IDE0052")]
         private Task ListenTask { get; set; }
         private Task MonitorTask { get; set; }
         #endregion properties private: Tasks
@@ -43,8 +48,7 @@ namespace TwitchLib.Communication.Services
             LOGGER = logger;
             Client = client;
             Throttler = throttler;
-            ConnectionWatchDog = new ConnectionWatchDog(Client,
-                                                             logger);
+            ConnectionWatchDog = new ConnectionWatchDog(Client, logger);
         }
         #endregion ctors
 
@@ -62,8 +66,7 @@ namespace TwitchLib.Communication.Services
                 MonitorTask = ConnectionWatchDog.StartMonitorTask();
             }
             Throttler.Start();
-            ListenTask = Task.Run(Client.ListenTaskAction,
-                                       Token);
+            ListenTask = Task.Run(Client.ListenTaskAction, Token);
         }
         #endregion methods internal
 

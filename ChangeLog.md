@@ -8,6 +8,15 @@
 - https://github.com/TwitchLib/TwitchLib.Communication/issues/13
 - https://github.com/TwitchLib/TwitchLib.Communication/issues/7
 
+## Issues
+### Known issues
+#### ReconnectionPolicy
+- `ReconnectionPolicy` has to consider the case that no reconnect is desired
+
+### Fixed issues
+#### SendOptions
+- `value` of zero for `ISendOptions.SendsAllowedInPeriod`
+
 ## public
 This section describes the changes that probably affect consumers of this API.
 ### behavioral
@@ -22,6 +31,13 @@ If no reconnect is desired, at this very moment the ctor `public ReconnectionPol
 
 Im going to fix that...
 
+### Obsolete
+#### IClient/AClientBase
+- `event EventHandler<OnWhisperThrottledEventArgs> OnWhisperThrottled;`
+- `bool SendWhisper(string message);`
+
+#### OnWhisperThrottledEventArgs
+- the `class` itself is obsolete
 
 ### IClient, WebSocketClient and TcpClient
 #### ctor
@@ -53,6 +69,8 @@ Im going to fix that...
 #### added
 - `bool SendPONG()`
     - whenever a PONG-Message has to be sent, use this method
+
+
 ### IClientOptions and ClientOptions
 In general, all values can only be passed via `ctor` and can not be changed afterwards.
 
@@ -75,11 +93,10 @@ In general, all values can only be passed via `ctor` and can not be changed afte
 - `TimeSpan ThrottlingPeriod { get; set; } = TimeSpan.FromSeconds(30);`
     - `TimeSpan ThrottlingPeriod { get; } = TimeSpan.FromSeconds(30);`
     - removed `set`, `value` is fixed to 30 seconds
-    - applies to both, Messages and Whispers
+    - applies Messages
     - please take a look at
         - the new `enum`s `MessageRateLimit` and `WhisperRateLimit`
         - https://dev.twitch.tv/docs/irc/#rate-limits
-        - https://discuss.dev.twitch.tv/t/whisper-rate-limiting/2836
 #### added
 - `ISendOptions MessageSendOptions { get; }`
     - `value` can only be passed via ctor. to make the API more robust
@@ -111,13 +128,6 @@ According to https://dev.twitch.tv/docs/irc/#rate-limits , it provides three val
 - `Limit_20_in_30_Seconds` with the `uint`-`value` 20
 - `Limit_100_in_30_Seconds` with the `uint`-`value` 100
 - `Limit_7500_in_30_Seconds` with the `uint`-`value` 7_500
-
-### WhisperRateLimit
-An `enum`, that provides a single `uint` constant that can/should be used for `ISendOptions.SendsAllowedInPeriod` that are passed to `IClientOptions` for `IClientOptions.WhisperSendOptions`
-According to https://discuss.dev.twitch.tv/t/whisper-rate-limiting/2836 , it provides the following value
-- `Limit_100_in_60_Seconds` with the `uint`-`value` 50
-    - yeah, thats right, 50
-    - because of some `internals`, `IClientOptions.ThrottlingPeriod` has a fixed `value` of 30; that's why this constants `value` is 50
 
 ### ISendOptions and SendOptions
 This `interface` and its implementation/realization are newly introduced and hold moved/removed properties from `IClientOptions`
@@ -175,16 +185,16 @@ Having several `Thread`s sending IRC-Messages, ahhhh, that could cause interfere
 To only have one `Thread`/`Task` that sends IRC-Messages a couple of changes have been made.
 
 The `ThrottlerService` now holds one single `Timer` that fires each 30 seconds and resets the throttling-windows.
-- Thats the secret behind the confusion within the `enum` `WhisperRateLimit` and its constants `value` of `50`
 
 A new `enum` named `MessageType` is introduced.
 
-It discriminates/differentiates the following three types of messages:
+It discriminates/differentiates the following two types of messages:
 - `ByPass`
 - `Message`
-- `Whisper`
 
-`BlockingCollection` is replaced by `ConcurrentQueue`. `ConcurrentQueue` is fast and it returns `null`, if there is no item in the queue.
+`BlockingCollection` is replaced by `ConcurrentQueue`.
+
+`ConcurrentQueue` is fast and it returns `null`, if there is no item in the queue.
 
 Now the `ThrottlerService` holds two `IDictionary`s
 - `IDictionary<MessageType, ISendOptions> Options`
@@ -193,15 +203,6 @@ Now the `ThrottlerService` holds two `IDictionary`s
 Now there is only one `Task` that is responsible for sending IRC-Messages.
 
 That `Task` loops through the `enum` `MessageType`s `values`.
-For each `value` it takes the `ISendOptions`, the respective `ConcurrentQueue` and the next item from that queue.
+For each `value` it takes the `ISendOptions`, the respective `ConcurrentQueue` and the next item from that queue and tries to send it.
 
 So, within one roundtrip, each `MessageType` gets its chance to be sent, starting with `MessageType.ByPass`.
-
-## Issues
-### Known issues
-#### ReconnectionPolicy
-- `ReconnectionPolicy` has to consider the case that no reconnect is desired
-
-### Fixed issues
-#### SendOptions
-- `value` of zero for `ISendOptions.SendsAllowedInPeriod`

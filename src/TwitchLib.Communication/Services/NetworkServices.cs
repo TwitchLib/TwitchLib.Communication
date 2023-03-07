@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Extensions;
+using TwitchLib.Communication.Helpers;
 
 namespace TwitchLib.Communication.Services
 {
@@ -57,7 +58,7 @@ namespace TwitchLib.Communication.Services
         internal void Start()
         {
             LOGGER?.TraceMethodCall(GetType());
-            if (MonitorTask == null || !IsTaskRunning(MonitorTask))
+            if (MonitorTask == null || !TaskHelper.IsTaskRunning(MonitorTask))
             {
                 // this task is probably still running
                 // may be in case of a network connection loss
@@ -72,27 +73,6 @@ namespace TwitchLib.Communication.Services
 
 
         #region methods private
-        private static bool IsTaskRunning(Task task)
-        {
-            return task != null
-                && !task.IsFaulted
-                && !task.IsCompleted
-#if NET
-            && !task.IsCompletedSuccessfully
-#endif
-                && !task.IsCanceled;
-
-
-            //if (task == null) return false;
-            //switch (task.Status)
-            //{
-            //    case TaskStatus.RanToCompletion:
-            //    case TaskStatus.Faulted:
-            //    case TaskStatus.Canceled:
-            //        return false;
-            //}
-            //return true;
-        }
 
         internal void Stop()
         {

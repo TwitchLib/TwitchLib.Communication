@@ -52,7 +52,11 @@ namespace TwitchLib.Communication.Services
             // just to have a default value in there;
             // its never used for ByPass
             // but it avoids TryGet etsy within the code
-            Options.Add(MessageType.ByPass, new SendOptions(0));
+            // has to be the value greater than zero
+            // otherwise ByPass Messages are always throttled
+            // sending ByPass-Messages is not counted by this ThrottlerService,
+            // the value has no impact,
+            // as long as it is greater than zero
             Queues.Add(MessageType.ByPass, new ConcurrentQueue<Tuple<DateTime, string>>());
             //
             Options.Add(MessageType.Whisper, whisperSendOptions);
@@ -74,6 +78,8 @@ namespace TwitchLib.Communication.Services
         internal void Stop()
         {
             LOGGER?.TraceMethodCall(GetType());
+            // the clients CancellationTokenSource.Token cancels the ListenTask
+            // so we only have to Dispose the timer
             ResetThrottlingWindowTimer?.Dispose();
         }
         // to restrict access to the queues to this class/instances of this class

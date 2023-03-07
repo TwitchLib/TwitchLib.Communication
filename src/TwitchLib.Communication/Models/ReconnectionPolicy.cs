@@ -1,15 +1,47 @@
 ﻿
+using System;
+
 namespace TwitchLib.Communication.Models
 {
-
+    /// <summary>
+    ///     Connection/Reconnection-Policy
+    ///     <br></br>
+    ///     <br></br>
+    ///     controls the attempts to make to connect and to reconnect to twitch
+    ///     <br></br>
+    ///     <br></br>
+    ///     to omit reconnects and to only make one attempt to connect to twitch, please use the ctor. <see cref="ReconnectionPolicy(Boolean)"/>
+    /// </summary>
     public class ReconnectionPolicy
     {
         private readonly int reconnectStepInterval;
-        private int? initMaxAttempts;
+        private readonly int? initMaxAttempts;
         private int currentReconnectInterval;
         private readonly int maxReconnectInterval;
         private int? maxAttempts;
         private int attemptsMade;
+
+        public bool OmitReconnect { get; }
+
+        /// <summary>
+        ///     this Constructor can/should be used to omit reconnect-attempts
+        /// </summary>
+        /// <param name="omitReconnect">
+        ///     <see langword="true"/> if the <see cref="Interfaces.IClient"/> should not reconnect
+        ///     <br></br>
+        ///     <br></br>
+        ///     passing <see langword="false"/> to this ctor. throws an <see cref="ArgumentOutOfRangeException"/>
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///     if <paramref name="omitReconnect"/> is <see langword="false"/>
+        /// </exception>
+        public ReconnectionPolicy(bool omitReconnect)
+        {
+            if (!omitReconnect) throw new ArgumentOutOfRangeException(nameof(omitReconnect), "To use this Constructor, the parameters value has to be true!");
+            OmitReconnect = true;
+            initMaxAttempts = 1;
+            maxAttempts = 1;
+        }
 
         /// <summary>
         ///     the <see cref="TwitchLib.Communication.Clients.TcpClient"/> or <see cref="TwitchLib.Communication.Clients.WebSocketClient"/>
@@ -151,17 +183,10 @@ namespace TwitchLib.Communication.Models
             initMaxAttempts = maxAttempts;
             attemptsMade = 0;
         }
-        /// <param name="attempts">
-        ///     <see langword="null"/> means infinite; it never stops to try to reconnect
-        /// </param>
-        public void SetMaxAttempts(int attempts)
-        {
-            initMaxAttempts = attempts;
-            maxAttempts = attempts;
-        }
 
-        public void Reset()
+        internal void Reset(bool isReconnect)
         {
+            if (isReconnect) return;
             attemptsMade = 0;
             currentReconnectInterval = reconnectStepInterval;
             maxAttempts = initMaxAttempts;

@@ -296,7 +296,7 @@ namespace TwitchLib.Communication.Clients
                 // this has to be the only place where 'SetSpecificClient()' is called!!!
                 SetSpecificClient();
                 bool first = true;
-                Options.ReconnectionPolicy.Reset();
+                Options.ReconnectionPolicy.Reset(isReconnect);
                 while (!IsConnected
                        && !Options.ReconnectionPolicy.AreAttemptsComplete())
                 {

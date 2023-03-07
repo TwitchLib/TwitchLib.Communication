@@ -10,12 +10,13 @@
 
 ## Issues
 ### Known issues
-#### ReconnectionPolicy
-- `ReconnectionPolicy` has to consider the case that no reconnect is desired
+- currently none
 
 ### Fixed issues
 #### SendOptions
 - `value` of zero for `ISendOptions.SendsAllowedInPeriod`
+#### ReconnectionPolicy
+- `ReconnectionPolicy` has to consider the case that no reconnect is desired
 
 ## Consideration/Proposal
 To pull down the login-process. Or to prepare the possibility to do so...

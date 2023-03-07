@@ -24,8 +24,8 @@ namespace TwitchLib.Communication.Models
         /// <param name="sendsAllowedInPeriod">
         ///     a <see langword="value"/> of zero means: 
         ///     <br></br>
-        ///     all messages/whispers that are enqueued to send
-        ///     via <see cref="Interfaces.IClient.Send(String)"/> or <see cref="Interfaces.IClient.SendWhisper(String)"/>
+        ///     all messages that are enqueued to send
+        ///     via <see cref="Interfaces.IClient.Send(String)"/>
         ///     are going to be throttled!
         ///     <br></br>
         ///     <br></br>

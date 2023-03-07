@@ -37,20 +37,14 @@ namespace TwitchLib.Communication.Interfaces
         ///     <br></br>
         ///     is always set to 30 seconds and you cannot change it
         ///     <br></br>
-        ///     also in case of whispers!
-        ///     <br></br>
         ///     <br></br>
         ///     <list type="bullet">
         ///         <item>
         ///             <see href="https://dev.twitch.tv/docs/irc/#rate-limits"/>
         ///         </item>
-        ///         <item>
-        ///             <see href="https://discuss.dev.twitch.tv/t/whisper-rate-limiting/2836"/>
-        ///         </item>
         ///     </list>
         /// </summary>
         TimeSpan ThrottlingPeriod { get; }
         ISendOptions MessageSendOptions { get; }
-        ISendOptions WhisperSendOptions { get; }
     }
 }

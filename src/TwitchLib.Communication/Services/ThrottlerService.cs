@@ -21,9 +21,7 @@ namespace TwitchLib.Communication.Services
     {
         #region variables private
         private long sentMessageCount = 0;
-        private long sentWhisperCount = 0;
         #endregion variables private
-
 
 
         #region properties private
@@ -44,7 +42,6 @@ namespace TwitchLib.Communication.Services
         #region ctors
         internal ThrottlerService(AClientBase<T> client,
                                   ISendOptions messageSendOptions,
-                                  ISendOptions whisperSendOptions,
                                   ILogger logger = null)
         {
             LOGGER = logger;
@@ -59,9 +56,6 @@ namespace TwitchLib.Communication.Services
             // as long as it is greater than zero
             Options.Add(MessageType.ByPass, new SendOptions(1));
             Queues.Add(MessageType.ByPass, new ConcurrentQueue<Tuple<DateTime, string>>());
-            //
-            Options.Add(MessageType.Whisper, whisperSendOptions);
-            Queues.Add(MessageType.Whisper, new ConcurrentQueue<Tuple<DateTime, string>>());
             //
             Options.Add(MessageType.Message, messageSendOptions);
             Queues.Add(MessageType.Message, new ConcurrentQueue<Tuple<DateTime, string>>());
@@ -122,7 +116,6 @@ namespace TwitchLib.Communication.Services
         {
             LOGGER?.TraceMethodCall(GetType());
             Interlocked.Exchange(ref sentMessageCount, 0);
-            Interlocked.Exchange(ref sentWhisperCount, 0);
         }
         private void StartSendTask()
         {
@@ -201,8 +194,6 @@ namespace TwitchLib.Communication.Services
             {
                 case MessageType.Message:
                     return Interlocked.Read(ref sentMessageCount);
-                case MessageType.Whisper:
-                    return Interlocked.Read(ref sentWhisperCount);
                 default:
                     return 0;
             }
@@ -215,9 +206,6 @@ namespace TwitchLib.Communication.Services
             {
                 case MessageType.Message:
                     Interlocked.Increment(ref sentMessageCount);
-                    break;
-                case MessageType.Whisper:
-                    Interlocked.Increment(ref sentWhisperCount);
                     break;
                 default:
                     break;
@@ -243,10 +231,6 @@ namespace TwitchLib.Communication.Services
             if (MessageType.Message == messageType)
             {
                 Client.RaiseMessageThrottled(new OnMessageThrottledEventArgs(onThrottledEventArgs));
-            }
-            else if (MessageType.Whisper == messageType)
-            {
-                Client.RaiseWhisperThrottled(new OnWhisperThrottledEventArgs(onThrottledEventArgs));
             }
         }
         #endregion Actions for NetworkServices: Messages

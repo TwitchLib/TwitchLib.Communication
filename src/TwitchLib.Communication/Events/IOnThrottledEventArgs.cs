@@ -7,7 +7,7 @@ namespace TwitchLib.Communication.Events
     {
         string Reason { get; }
         /// <summary>
-        ///     the Message or the Whisper that has been throttled
+        ///     the Message that has been throttled
         /// </summary>
         string ItemNotSent { get; }
         long SentCount { get; }

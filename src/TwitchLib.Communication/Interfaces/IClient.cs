@@ -61,6 +61,7 @@ namespace TwitchLib.Communication.Interfaces
         /// <summary>
         ///     Fires when a Whisper has been throttled.
         /// </summary>
+        [Obsolete("Whispers are no longer part of IRC.")]
         event EventHandler<OnWhisperThrottledEventArgs> OnWhisperThrottled;
 
         /// <summary>
@@ -138,6 +139,7 @@ namespace TwitchLib.Communication.Interfaces
         /// <returns>
         ///     Returns True if was successfully queued. False if it fails.
         /// </returns>
+        [Obsolete("Whispers are no longer part of IRC.")]
         bool SendWhisper(string message);
         /// <summary>
         ///     bypasses message-send-throttling

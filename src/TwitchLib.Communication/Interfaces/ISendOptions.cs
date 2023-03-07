@@ -18,11 +18,6 @@ namespace TwitchLib.Communication.Interfaces
         ///     see also <see cref="Enums.MessageRateLimit"/>:
         ///     <br></br>
         ///     <inheritdoc cref="Enums.MessageRateLimit"/>
-        ///     <br></br>
-        ///     <br></br>
-        ///     see also <see cref="Enums.WhisperRateLimit"/>:
-        ///     <br></br>
-        ///     <inheritdoc cref="Enums.WhisperRateLimit"/>
         /// </summary>
         uint SendsAllowedInPeriod { get; }
 

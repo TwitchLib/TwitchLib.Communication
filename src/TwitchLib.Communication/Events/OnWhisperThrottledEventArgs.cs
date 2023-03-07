@@ -2,7 +2,7 @@
 
 namespace TwitchLib.Communication.Events
 {
-
+    [Obsolete("Whispers are no longer part of IRC.")]
     public class OnWhisperThrottledEventArgs : EventArgs, IOnThrottledEventArgs
     {
         private IOnThrottledEventArgs OnThrottledEventArgs { get; }

@@ -9,10 +9,6 @@
         /// <summary>
         ///     indicates a normal Message
         /// </summary>
-        Message,
-        /// <summary>
-        ///     indicates a Whisper
-        /// </summary>
-        Whisper
+        Message
     }
 }

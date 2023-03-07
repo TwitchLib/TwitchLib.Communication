@@ -53,6 +53,7 @@ namespace TwitchLib.Communication.Clients
         public event EventHandler<OnFatalErrorEventArgs> OnFatality;
         public event EventHandler<OnMessageEventArgs> OnMessage;
         public event EventHandler<OnMessageThrottledEventArgs> OnMessageThrottled;
+        [Obsolete("Whispers are no longer part of IRC.")]
         public event EventHandler<OnWhisperThrottledEventArgs> OnWhisperThrottled;
         public event EventHandler<OnSendFailedEventArgs> OnSendFailed;
         public event EventHandler<OnStateChangedEventArgs> OnStateChanged;
@@ -108,7 +109,6 @@ namespace TwitchLib.Communication.Clients
             Options = options ?? new ClientOptions();
             Throttler = new ThrottlerService<T>(this,
                                                 Options.MessageSendOptions,
-                                                Options.WhisperSendOptions,
                                                 logger);
             NetworkServices = new NetworkServices<T>(this,
                                                      Throttler,
@@ -118,18 +118,6 @@ namespace TwitchLib.Communication.Clients
 
 
         #region invoker/raiser internal
-        /// <summary>
-        ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
-        /// </summary>
-        internal void RaiseWhisperThrottled(OnWhisperThrottledEventArgs eventArgs)
-        {
-            LOGGER?.TraceMethodCall(GetType());
-            if (Token.IsCancellationRequested)
-            {
-                return;
-            }
-            OnWhisperThrottled?.Invoke(this, eventArgs);
-        }
 
         /// <summary>
         ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
@@ -241,10 +229,11 @@ namespace TwitchLib.Communication.Clients
             return Throttler.Enqueue(message, MessageType.Message);
         }
 
+        [Obsolete("Whispers are no longer part of IRC.")]
         public bool SendWhisper(string message)
         {
             LOGGER?.TraceMethodCall(GetType());
-            return Throttler.Enqueue(message, MessageType.Whisper);
+            return false;
         }
 
         public bool Open()

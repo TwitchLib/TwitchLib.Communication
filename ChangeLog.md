@@ -131,9 +131,7 @@ The client acts a bit more synchronous.
 ### WebSocketClient and TcpClient
 Almost everything that both clients have in common went to an `abstract` `class` called `ABaseClient`.
 
-`ABaseClientTyped` is a bit more specific related to the underlying `System.Net.Sockets.TcpClient` and/or `System.Net.WebSockets.ClientWbSocket`, inherits from `ABaseClient` and has a `Type`-Parameter.
-
-`WebSocketClient` and `TcpClient` inherit from `ABaseClientTyped` and realise the following three methods:
+`WebSocketClient` and `TcpClient` inherit from `ABaseClient` and realise the following three methods:
 
 - `internal override void SendIRC(string message)`
     - this is the 'real'-send
@@ -199,3 +197,11 @@ For each `value` it takes the `ISendOptions`, the respective `ConcurrentQueue` a
 
 So, within one roundtrip, each `MessageType` gets its chance to be sent, starting with `MessageType.ByPass`.
 
+## Issues
+### Known issues
+#### ReconnectionPolicy
+- `ReconnectionPolicy` has to consider the case that no reconnect is desired
+
+### Fixed issues
+#### SendOptions
+- `value` of zero for `ISendOptions.SendsAllowedInPeriod`

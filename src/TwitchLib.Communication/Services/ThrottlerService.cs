@@ -17,7 +17,7 @@ using TwitchLib.Communication.Models;
 namespace TwitchLib.Communication.Services
 {
 
-    internal class ThrottlerService
+    internal class ThrottlerService<T> where T : IDisposable
     {
         #region variables private
         private long sentMessageCount = 0;
@@ -30,7 +30,7 @@ namespace TwitchLib.Communication.Services
         private ILogger LOGGER { get; }
         private IDictionary<MessageType, ISendOptions> Options { get; } = new Dictionary<MessageType, ISendOptions>();
         private IDictionary<MessageType, ConcurrentQueue<Tuple<DateTime, string>>> Queues { get; } = new Dictionary<MessageType, ConcurrentQueue<Tuple<DateTime, string>>>();
-        private AClientBase Client { get; }
+        private AClientBase<T> Client { get; }
         private CancellationToken Token => Client.Token;
         private Timer ResetThrottlingWindowTimer { get; set; }
         /// <summary>
@@ -42,7 +42,7 @@ namespace TwitchLib.Communication.Services
 
 
         #region ctors
-        internal ThrottlerService(AClientBase client,
+        internal ThrottlerService(AClientBase<T> client,
                                   ISendOptions messageSendOptions,
                                   ISendOptions whisperSendOptions,
                                   ILogger logger = null)

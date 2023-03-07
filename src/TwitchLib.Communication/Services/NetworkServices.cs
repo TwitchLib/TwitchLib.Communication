@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,7 +15,7 @@ namespace TwitchLib.Communication.Services
     /// <summary>
     ///     <see langword="class"/> to bundle Network-Service-<see cref="Task"/>s
     /// </summary>
-    internal class NetworkServices
+    internal class NetworkServices<T> where T : IDisposable
     {
         #region properties private: Tasks/Timers
         // each Task is held in its own variable to be more precise
@@ -30,26 +31,26 @@ namespace TwitchLib.Communication.Services
 
         #region properties private
         private ILogger LOGGER { get; }
-        private ThrottlerService Throttler { get; }
+        private ThrottlerService<T> Throttler { get; }
         private CancellationToken Token => Client.Token;
-        private AClientBase Client { get; }
+        private AClientBase<T> Client { get; }
         #endregion properties private
 
 
         #region properties internal
-        internal ConnectionWatchDog ConnectionWatchDog { get; }
+        internal ConnectionWatchDog<T> ConnectionWatchDog { get; }
         #endregion properties internal
 
 
         #region ctors
-        internal NetworkServices(AClientBase client,
-                                 ThrottlerService throttler,
+        internal NetworkServices(AClientBase<T> client,
+                                 ThrottlerService<T> throttler,
                                  ILogger logger = null)
         {
             LOGGER = logger;
             Client = client;
             Throttler = throttler;
-            ConnectionWatchDog = new ConnectionWatchDog(Client, logger);
+            ConnectionWatchDog = new ConnectionWatchDog<T>(Client, logger);
         }
         #endregion ctors
 

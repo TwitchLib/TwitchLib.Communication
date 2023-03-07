@@ -13,11 +13,9 @@ using TwitchLib.Communication.Interfaces;
 namespace TwitchLib.Communication.Clients
 {
 
-    public class WebSocketClient : AClientBaseTyped<ClientWebSocket>
+    public class WebSocketClient : AClientBase<ClientWebSocket>
     {
         //private readonly object sync = new object();
-
-
         #region properties protected
         protected override string URL { get; }
         #endregion properties protected

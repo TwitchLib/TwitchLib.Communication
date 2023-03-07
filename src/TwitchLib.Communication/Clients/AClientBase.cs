@@ -27,10 +27,11 @@ namespace TwitchLib.Communication.Clients
     ///         </item>
     ///     </list>
     /// </summary>
-    public abstract class AClientBase : IClient
+    public abstract class AClientBase<T> : IClient where T : IDisposable
     {
         #region properties protected
         protected ILogger LOGGER { get; }
+        protected abstract string URL { get; }
         #endregion properties protected
 
 
@@ -60,6 +61,19 @@ namespace TwitchLib.Communication.Clients
 
 
         #region properties public
+        /// <summary>
+        ///     the underlying
+        ///     <list>
+        ///         <item>
+        ///             <see cref="System.Net.Sockets.TcpClient"/>
+        ///         </item>
+        ///         <item>or</item>
+        ///         <item>
+        ///             <see cref="System.Net.WebSockets.ClientWebSocket"/>
+        ///         </item>
+        ///     </list>
+        /// </summary>
+        public T Client { get; private set; }
         public abstract bool IsConnected { get; }
         public IClientOptions Options { get; }
 
@@ -72,8 +86,8 @@ namespace TwitchLib.Communication.Clients
         ///     whenever a call to <see cref="CancellationTokenSource.Cancel()"/> is made
         /// </summary>
         private CancellationTokenSource CancellationTokenSource { get; set; }
-        private ThrottlerService Throttler { get; }
-        private NetworkServices NetworkServices { get; }
+        private ThrottlerService<T> Throttler { get; }
+        private NetworkServices<T> NetworkServices { get; }
         #endregion properties private
 
 
@@ -82,15 +96,23 @@ namespace TwitchLib.Communication.Clients
                              ILogger logger = null)
         {
             LOGGER = logger;
+            // INFO: Feedback by Bukk94: not to restrict the Client to those two known types
+            //if (typeof(T) != typeof(System.Net.WebSockets.ClientWebSocket)
+            //    && typeof(T) != typeof(System.Net.Sockets.TcpClient))
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(T),
+            //                                          typeof(T),
+            //                                          "Type-Parameter hast to be 'System.Net.Sockets.TcpClient' or 'System.Net.WebSockets.ClientWebSocket'");
+            //}
             CancellationTokenSource = new CancellationTokenSource();
             Options = options ?? new ClientOptions();
-            Throttler = new ThrottlerService(this,
-                                             Options.MessageSendOptions,
-                                             Options.WhisperSendOptions,
-                                             logger);
-            NetworkServices = new NetworkServices(this,
-                                                  Throttler,
-                                                  logger);
+            Throttler = new ThrottlerService<T>(this,
+                                                Options.MessageSendOptions,
+                                                Options.WhisperSendOptions,
+                                                logger);
+            NetworkServices = new NetworkServices<T>(this,
+                                                     Throttler,
+                                                     logger);
         }
         #endregion ctor(s)
 
@@ -356,6 +378,19 @@ namespace TwitchLib.Communication.Clients
 
         #region methods protected
         /// <summary>
+        ///     to instantiate the underlying
+        ///     <list>
+        ///         <item>
+        ///             <see cref="System.Net.Sockets.TcpClient"/>
+        ///         </item>
+        ///         <item>or</item>
+        ///         <item>
+        ///             <see cref="System.Net.WebSockets.ClientWebSocket"/>
+        ///         </item>
+        ///     </list>
+        /// </summary>
+        protected abstract T NewClient();
+        /// <summary>
         ///     one of the following specific methods
         ///     <list>
         ///         <item>
@@ -402,7 +437,13 @@ namespace TwitchLib.Communication.Clients
         ///     <br></br>
         ///     <b>it musnt be called anywhere else than within <see cref="Open()"/>!!!</b>
         /// </summary>
-        protected abstract void SetSpecificClient();
+        protected void SetSpecificClient()
+        {
+            LOGGER?.TraceMethodCall(GetType());
+            // this should be the only place where the Client is set!
+            // dont do it anywhere else
+            Client = NewClient();
+        }
         #endregion methods protected
 
 

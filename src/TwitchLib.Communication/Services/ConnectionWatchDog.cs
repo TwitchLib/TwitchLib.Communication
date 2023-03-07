@@ -16,12 +16,12 @@ namespace TwitchLib.Communication.Services
     ///     just to check connection state
     /// </summary>
     [SuppressMessage("Style", "IDE0058")]
-    internal class ConnectionWatchDog
+    internal class ConnectionWatchDog<T> where T : IDisposable
     {
 
         #region properties private
         private ILogger LOGGER { get; }
-        private AClientBase Client { get; }
+        private AClientBase<T> Client { get; }
         /// <summary>
         ///     <list>
         ///         <item>
@@ -38,7 +38,7 @@ namespace TwitchLib.Communication.Services
 
 
         #region ctors
-        internal ConnectionWatchDog(AClientBase client,
+        internal ConnectionWatchDog(AClientBase<T> client,
                                     ILogger logger = null)
         {
             LOGGER = logger;

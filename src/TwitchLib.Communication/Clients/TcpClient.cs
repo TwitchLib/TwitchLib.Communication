@@ -12,7 +12,7 @@ using TwitchLib.Communication.Interfaces;
 namespace TwitchLib.Communication.Clients
 {
 
-    public class TcpClient : AClientBaseTyped<System.Net.Sockets.TcpClient>
+    public class TcpClient : AClientBase<System.Net.Sockets.TcpClient>
     {
         //private readonly object sync = new object();
 

@@ -57,6 +57,7 @@ namespace TwitchLib.Communication.Services
             // sending ByPass-Messages is not counted by this ThrottlerService,
             // the value has no impact,
             // as long as it is greater than zero
+            Options.Add(MessageType.ByPass, new SendOptions(1));
             Queues.Add(MessageType.ByPass, new ConcurrentQueue<Tuple<DateTime, string>>());
             //
             Options.Add(MessageType.Whisper, whisperSendOptions);
@@ -152,21 +153,28 @@ namespace TwitchLib.Communication.Services
             long localSentCount = ReadSentCount(messageType);
             try
             {
+                // Sequence: always try to dequeue first
+                bool taken = queue.TryDequeue(out msg);
+                if (!taken || msg == null)
+                {
+                    return;
+                }
+                // Sequence: now check CacheItemTimeout
+                if (msg.Item1.Add(options.CacheItemTimeout) < DateTime.UtcNow)
+                {
+                    return;
+                }
+                // Sequence: now check for throttling
+                //           if the consumer of this API passes zero for SendsAllowedInPeriod
+                //           to the ctor of SendOptions
+                //           this Sequence-order makes it transparent
+                //           cause Throttle raises the corresponding Event with the needed information
                 if (localSentCount >= options.SendsAllowedInPeriod)
                 {
                     Throttle(messageType,
                              msg?.Item2,
                              options,
                              localSentCount);
-                    return;
-                }
-                bool taken = queue.TryDequeue(out msg);
-                if (!taken || msg == null)
-                {
-                    return;
-                }
-                if (msg.Item1.Add(options.CacheItemTimeout) < DateTime.UtcNow)
-                {
                     return;
                 }
 

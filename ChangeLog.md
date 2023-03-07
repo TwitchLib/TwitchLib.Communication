@@ -17,6 +17,16 @@
 #### SendOptions
 - `value` of zero for `ISendOptions.SendsAllowedInPeriod`
 
+## Consideration/Proposal
+To pull down the login-process. Or to prepare the possibility to do so...
+
+For both libraries, `TwitchLib.Client` and `TwitchLib.PubSub`.
+
+### Benefits
+- `ThrottlerService` would not send messages until the `IClient` is logged in
+- prevent loss of messages after reconnect with a large amount of messages within the queue
+
+
 ## public
 This section describes the changes that probably affect consumers of this API.
 ### behavioral

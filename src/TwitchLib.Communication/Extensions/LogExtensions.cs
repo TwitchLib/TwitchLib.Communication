@@ -15,9 +15,9 @@ namespace TwitchLib.Communication.Extensions
                                            [CallerMemberName] string callerMemberName = "",
                                            [CallerLineNumber] int callerLineNumber = 0)
         {
-            // because of the code-formatting, 1 line is subtracted from the callerLineNumber
+            // because of the code-formatting, 2 line is subtracted from the callerLineNumber
             // cant be done inline!
-            callerLineNumber -= 1;
+            callerLineNumber -= 2;
             logger?.LogTrace("{FullName}.{callerMemberName} at line {callerLineNumber} is called",
                              type.FullName, callerMemberName, callerLineNumber);
         }

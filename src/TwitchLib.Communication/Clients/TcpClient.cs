@@ -124,11 +124,6 @@ namespace TwitchLib.Communication.Clients
                                                   Token);
             // GetAwaiter().GetResult() to avoid async in method-signature 'protected override void SpecificClientConnect()';
             waitTask.GetAwaiter().GetResult();
-            if (!Client.Connected)
-            {
-                LOGGER?.TraceAction(GetType(), "Client couldnt establish connection");
-                return;
-            }
 #else
                 // within the following thread:
                 // https://stackoverflow.com/questions/4238345/asynchronously-wait-for-taskt-to-complete-with-timeout
@@ -147,13 +142,13 @@ namespace TwitchLib.Communication.Clients
                     // though 'theTaskThatCompletedFirst' is unused, just to be precise...
                     Task theTaskThatCompletedFirst = task.GetAwaiter().GetResult();
                     delayTaskCancellationTokenSource?.Cancel();
-                    if (!Client.Connected)
-                    {
-                        LOGGER?.TraceAction(GetType(), "Client couldnt establish connection");
-                        return;
-                    }
                 }
 #endif
+                if (!Client.Connected)
+                {
+                    LOGGER?.TraceAction(GetType(), "Client couldnt establish connection");
+                    return;
+                }
                 LOGGER?.TraceAction(GetType(), "Client established connection successfully");
                 if (Options.UseSsl)
                 {

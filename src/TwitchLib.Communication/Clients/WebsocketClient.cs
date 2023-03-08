@@ -191,6 +191,11 @@ namespace TwitchLib.Communication.Clients
                     delayTaskCancellationTokenSource?.Cancel();
                 }
 #endif
+                if (!IsConnected)
+                {
+                    LOGGER?.TraceAction(GetType(), "Client couldnt establish connection");
+                }
+                // take care: the following closing brace belongs to 'try {'
             }
             catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))
             {

@@ -1,7 +1,6 @@
 ﻿using TwitchLib.Communication.Clients;
-using TwitchLib.Communication.Tests.Base;
 
-namespace TwitchLib.Communication.Tests
+namespace TwitchLib.Communication.Tests.Clients
 {
     public class TcpClientTests : ClientTestsBase<TcpClient>
     {

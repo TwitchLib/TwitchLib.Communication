@@ -109,7 +109,7 @@ namespace TwitchLib.Communication.Services
             ResetThrottlingWindowTimer = new Timer(ResetCallback,
                                                    null,
                                                    TimeSpan.FromSeconds(0),
-                                                   TimeSpan.FromSeconds(20));
+                                                   Client.Options.ThrottlingPeriod);
         }
         [SuppressMessage("Style", "IDE0058")]
         private void ResetCallback(object state)

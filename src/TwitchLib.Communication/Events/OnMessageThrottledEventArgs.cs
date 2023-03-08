@@ -21,5 +21,9 @@ namespace TwitchLib.Communication.Events
         {
             OnThrottledEventArgs = onThrottledEventArgs;
         }
+        public override string ToString()
+        {
+            return OnThrottledEventArgs.ToString();
+        }
     }
 }

@@ -125,9 +125,9 @@ namespace TwitchLib.Communication.Services
         private void SendTaskAction()
         {
             LOGGER?.TraceMethodCall(GetType());
+            MessageType[] messageTypes = (MessageType[]) Enum.GetValues(typeof(MessageType));
             while (Client.IsConnected && !Token.IsCancellationRequested)
             {
-                MessageType[] messageTypes = (MessageType[]) Enum.GetValues(typeof(MessageType));
                 foreach (MessageType messageType in messageTypes)
                 {
                     TrySend(messageType);

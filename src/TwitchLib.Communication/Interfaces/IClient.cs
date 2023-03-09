@@ -29,11 +29,6 @@ namespace TwitchLib.Communication.Interfaces
         event EventHandler<OnConnectedEventArgs> OnConnected;
 
         /// <summary>
-        ///     Fires when Data (ByteArray) is received.
-        /// </summary>
-        event EventHandler<OnDataEventArgs> OnData;
-
-        /// <summary>
         ///     Fires when the Client disconnects
         /// </summary>
         event EventHandler<OnDisconnectedEventArgs> OnDisconnected;

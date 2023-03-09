@@ -47,7 +47,6 @@ namespace TwitchLib.Communication.Clients
 
         #region events public
         public event EventHandler<OnConnectedEventArgs> OnConnected;
-        public event EventHandler<OnDataEventArgs> OnData;
         public event EventHandler<OnDisconnectedEventArgs> OnDisconnected;
         public event EventHandler<OnErrorEventArgs> OnError;
         public event EventHandler<OnFatalErrorEventArgs> OnFatality;

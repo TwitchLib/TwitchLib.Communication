@@ -66,10 +66,12 @@ namespace TwitchLib.Communication.Tests.Models
                 Assert.False(reconnectionPolicy.AreAttemptsComplete());
                 reconnectionPolicy.ProcessValues();
                 Assert.True(reconnectionPolicy.AreAttemptsComplete());
+                // in case of a normal connect, we expect the ReconnectionPolicy to be reset
                 reconnectionPolicy.Reset(false);
                 Assert.False(reconnectionPolicy.AreAttemptsComplete());
                 reconnectionPolicy.ProcessValues();
                 Assert.True(reconnectionPolicy.AreAttemptsComplete());
+                // in case of a reconnect, we expect the ReconnectionPolicy not to be reset
                 reconnectionPolicy.Reset(true);
                 Assert.True(reconnectionPolicy.AreAttemptsComplete());
             }

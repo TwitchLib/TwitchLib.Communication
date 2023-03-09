@@ -31,6 +31,13 @@ namespace TwitchLib.Communication.Models
         ///     <br></br>
         ///     <br></br>
         ///     passing <see langword="false"/> to this ctor. throws an <see cref="ArgumentOutOfRangeException"/>
+        ///     <br></br>
+        ///     <br></br>
+        ///     <b>Warning:</b>
+        ///     <br></br>
+        ///     omitting the reconnect, impacts <see cref="Interfaces.IClient.Reconnect"/>
+        ///     <br></br>
+        ///     you have to stay in that workflow <see cref="Interfaces.IClient.Open()"/> -> <see cref="Interfaces.IClient.Close()"/> -> <see cref="Interfaces.IClient.Open()"/>
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">
         ///     if <paramref name="omitReconnect"/> is <see langword="false"/>

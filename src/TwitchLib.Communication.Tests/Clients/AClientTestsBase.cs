@@ -29,10 +29,10 @@ namespace TwitchLib.Communication.Tests.Clients
     /// </typeparam>
     [SuppressMessage("Style", "IDE0058")]
     [SuppressMessage("Style", "CA2254")]
-    public abstract class ClientTestsBase<T> where T : IClient
+    public abstract class AClientTestsBase<T> where T : IClient
     {
         private static readonly uint waitAfterDispose = 3;
-        public ClientTestsBase() { }
+        public AClientTestsBase() { }
         [Fact]
         public void Client_Raises_OnConnected_EventArgs()
         {

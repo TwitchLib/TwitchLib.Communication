@@ -103,10 +103,6 @@ namespace TwitchLib.Communication.Tests.Clients
         [Fact]
         public void Client_Raises_OnReconnected_EventArgs()
         {
-            //WebSocketClient client = new WebSocketClient(new ClientOptions()
-            // TODO: revert: see "TODO: handle Options.ReconnectionPolicy == null; how to act in that case?"
-            //{ ReconnectionPolicy = null }
-            //);
             // create one logger per test-method! - cause one file per test-method is generated
             ILogger<T> logger = TestLogHelper.GetLogger<T>();
             T? client = GetClient(logger);

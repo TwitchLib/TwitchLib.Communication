@@ -219,7 +219,6 @@ namespace TwitchLib.Communication.Clients
         public bool SendPONG()
         {
             LOGGER?.TraceMethodCall(GetType());
-            // TODO: check if thats correct, do we have to bypass throttling for PONG-messages? if not, remove this stuff
             return Throttler.Enqueue("PONG", MessageType.ByPass);
         }
         public bool Send(string message)
@@ -483,8 +482,6 @@ namespace TwitchLib.Communication.Clients
         internal bool SendPING()
         {
             LOGGER?.TraceMethodCall(GetType());
-            // TODO: check if thats correct, do we have to bypass throttling for PING-messages? if not, change it to normal Send("PING")
-            //this.Send("PING");
             return Throttler.Enqueue("PING", MessageType.ByPass);
         }
         #endregion methods internal

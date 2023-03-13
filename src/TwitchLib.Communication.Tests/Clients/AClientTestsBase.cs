@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Interfaces;
 using TwitchLib.Communication.Models;
-using TwitchLib.Communication.Tests.Helper;
+using TwitchLib.Communication.Tests.Helpers;
 
 using Xunit;
 using Xunit.Sdk;

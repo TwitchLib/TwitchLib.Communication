@@ -2,6 +2,5 @@
 
 namespace TwitchLib.Communication.Events
 {
-    public class OnReconnectedEventArgs : EventArgs
-    { }
+    public class OnReconnectedEventArgs : EventArgs { }
 }

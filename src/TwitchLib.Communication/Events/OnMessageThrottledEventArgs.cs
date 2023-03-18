@@ -17,7 +17,7 @@ namespace TwitchLib.Communication.Events
 
         public uint AllowedInPeriod => OnThrottledEventArgs.AllowedInPeriod;
 
-        internal OnMessageThrottledEventArgs(IOnThrottledEventArgs onThrottledEventArgs)
+        public OnMessageThrottledEventArgs(IOnThrottledEventArgs onThrottledEventArgs)
         {
             OnThrottledEventArgs = onThrottledEventArgs;
         }

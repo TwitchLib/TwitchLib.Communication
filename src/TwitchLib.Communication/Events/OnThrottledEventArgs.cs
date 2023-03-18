@@ -7,7 +7,7 @@ namespace TwitchLib.Communication.Events
     /// <summary>
     ///     used for <see cref="OnMessageThrottledEventArgs"/> and <see cref="OnWhisperThrottledEventArgs"/>
     /// </summary>
-    internal class OnThrottledEventArgs : IOnThrottledEventArgs
+    public class OnThrottledEventArgs : IOnThrottledEventArgs
     {
         public string Reason { get; set; }
         public string ItemNotSent { get; set; }

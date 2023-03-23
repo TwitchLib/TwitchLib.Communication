@@ -111,7 +111,7 @@ namespace TwitchLib.Communication.Tests.Clients
             {
                 ManualResetEvent pauseReconnected = new ManualResetEvent(false);
 
-                Assert.Raises<OnReconnectedEventArgs>(
+                Assert.Raises<OnConnectedEventArgs>(
                     h => client.OnReconnected += h,
                     h => client.OnReconnected -= h,
                      () =>

@@ -109,7 +109,12 @@ namespace TwitchLib.Communication.Interfaces
         /// <param name="message">
         ///     irc-message to send
         /// </param>
-        void Send(string message);
+        /// <returns>
+        ///     <see langword="true"/>, if the message should be sent
+        ///     <br></br>
+        ///     <see langword="false"/> otherwise
+        /// </returns>
+        bool Send(string message);
 
         /// <summary>
         ///     Queue a Whisper to Send to the server as a String.

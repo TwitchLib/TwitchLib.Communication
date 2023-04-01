@@ -193,16 +193,18 @@ namespace TwitchLib.Communication.Clients
 
 
         #region methods public
-        public void Send(string message)
+        public bool Send(string message)
         {
             LOGGER?.TraceMethodCall(GetType());
             try
             {
                 SendIRC(message);
+                return true;
             }
             catch (Exception e)
             {
                 RaiseSendFailed(new OnSendFailedEventArgs() { Exception = e, Data = message });
+                return false;
             }
         }
 
@@ -423,6 +425,11 @@ namespace TwitchLib.Communication.Clients
         /// <param name="message">
         ///     IRC-Messsage
         /// </param>
+        /// <returns>
+        ///     <see langword="true"/>, if the message should be sent
+        ///     <br></br>
+        ///     <see langword="false"/> otherwise
+        /// </returns>
         internal abstract void SendIRC(string message);
         /// <summary>
         ///     to issue a reconnect

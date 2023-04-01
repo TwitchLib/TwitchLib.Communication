@@ -49,17 +49,6 @@ namespace TwitchLib.Communication.Interfaces
         event EventHandler<OnMessageEventArgs> OnMessage;
 
         /// <summary>
-        ///     Fires when a Message has been throttled.
-        /// </summary>
-        event EventHandler<OnMessageThrottledEventArgs> OnMessageThrottled;
-
-        /// <summary>
-        ///     Fires when a Whisper has been throttled.
-        /// </summary>
-        [Obsolete("Whispers are no longer part of IRC.")]
-        event EventHandler<OnWhisperThrottledEventArgs> OnWhisperThrottled;
-
-        /// <summary>
         ///     Fires when a message Send event failed.
         /// </summary>
         event EventHandler<OnSendFailedEventArgs> OnSendFailed;
@@ -115,15 +104,12 @@ namespace TwitchLib.Communication.Interfaces
         /// </summary>
         void Close();
         /// <summary>
-        ///     Queue a Message to Send to the server as a String.
+        ///     sends the given irc-<paramref name="message"/>
         /// </summary>
         /// <param name="message">
-        ///     The Message To Queue
+        ///     irc-message to send
         /// </param>
-        /// <returns>
-        ///     Returns True if was successfully queued. False if it fails.
-        /// </returns>
-        bool Send(string message);
+        void Send(string message);
 
         /// <summary>
         ///     Queue a Whisper to Send to the server as a String.
@@ -136,10 +122,6 @@ namespace TwitchLib.Communication.Interfaces
         /// </returns>
         [Obsolete("Whispers are no longer part of IRC.")]
         bool SendWhisper(string message);
-        /// <summary>
-        ///     bypasses message-send-throttling
-        /// </summary>
-        bool SendPONG();
         #endregion methods
     }
 }

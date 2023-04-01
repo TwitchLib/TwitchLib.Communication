@@ -31,7 +31,6 @@ namespace TwitchLib.Communication.Services
 
         #region properties private
         private ILogger LOGGER { get; }
-        private ThrottlerService<T> Throttler { get; }
         private CancellationToken Token => Client.Token;
         private AClientBase<T> Client { get; }
         #endregion properties private
@@ -44,12 +43,10 @@ namespace TwitchLib.Communication.Services
 
         #region ctors
         internal NetworkServices(AClientBase<T> client,
-                                 ThrottlerService<T> throttler,
                                  ILogger logger = null)
         {
             LOGGER = logger;
             Client = client;
-            Throttler = throttler;
             ConnectionWatchDog = new ConnectionWatchDog<T>(Client, logger);
         }
         #endregion ctors
@@ -67,7 +64,6 @@ namespace TwitchLib.Communication.Services
                 // ConnectionWatchDog is the only one, that has a seperate CancellationTokenSource!
                 MonitorTask = ConnectionWatchDog.StartMonitorTask();
             }
-            Throttler.Start();
             ListenTask = Task.Run(Client.ListenTaskAction, Token);
         }
         #endregion methods internal
@@ -78,7 +74,6 @@ namespace TwitchLib.Communication.Services
         internal void Stop()
         {
             LOGGER?.TraceMethodCall(GetType());
-            Throttler.Stop();
             ConnectionWatchDog.Stop();
         }
         #endregion methods private

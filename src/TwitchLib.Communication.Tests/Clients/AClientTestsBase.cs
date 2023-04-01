@@ -12,7 +12,6 @@ using TwitchLib.Communication.Models;
 using TwitchLib.Communication.Tests.Helpers;
 
 using Xunit;
-using Xunit.Sdk;
 
 namespace TwitchLib.Communication.Tests.Clients
 {
@@ -194,116 +193,6 @@ namespace TwitchLib.Communication.Tests.Clients
             {
                 logger.LogError(e.ToString());
                 Assert.Fail(e.ToString());
-            }
-            finally
-            {
-                TheFinally(client);
-            }
-        }
-        /// <summary>
-        ///     checks <see cref="ClientOptions.MessageSendOptions"/>
-        ///     <br></br>
-        ///     <see cref="ISendOptions.SendsAllowedInPeriod"/> = 0
-        ///     <br></br>
-        ///     sending <see cref="Enums.MessageType.Message"/>
-        /// </summary>
-        [Fact]
-        public void Client_Raises_OnThrottled_YES()
-        {
-            // create one logger per test-method! - cause one file per test-method is generated
-            ILogger<T> logger = TestLogHelper.GetLogger<T>();
-            ISendOptions messageSendOptions = new SendOptions(0);
-            IClientOptions clientOptions = new ClientOptions(messageSendOptions: messageSendOptions);
-            T? client = GetClient(logger, clientOptions);
-            Assert.NotNull(client);
-            try
-            {
-                ManualResetEvent pauseConnected = new ManualResetEvent(false);
-                ManualResetEvent pauseAssertion = new ManualResetEvent(false);
-
-                Assert.Raises<OnMessageThrottledEventArgs>(
-                    h => client.OnMessageThrottled += h,
-                    h => client.OnMessageThrottled -= h,
-                     () =>
-                     {
-                         client.OnConnected += (sender, e) =>
-                         {
-                             client.Send("PING");
-                             pauseConnected.Set();
-                         };
-
-                         client.OnMessageThrottled += (sender, e) =>
-                         {
-                             Assert.NotNull(e);
-                             Assert.NotNull(e.ItemNotSent);
-                             Assert.Equal(0, e.SentCount);
-                             Assert.Equal((uint) 0, e.AllowedInPeriod);
-                             pauseAssertion.Set();
-                         };
-
-                         client.Open();
-                         Assert.True(pauseConnected.WaitOne(5_000));
-                         Assert.True(pauseAssertion.WaitOne(5_000));
-                     });
-            }
-            catch (Exception e)
-            {
-                logger.LogError(e.ToString());
-                Assert.Fail(e.ToString());
-            }
-            finally
-            {
-                TheFinally(client);
-            }
-        }
-        /// <summary>
-        ///     checks <see cref="ClientOptions.MessageSendOptions"/>
-        ///     <br></br>
-        ///     <see cref="ISendOptions.SendsAllowedInPeriod"/> = 0
-        ///     <br></br>
-        ///     sending <see cref="Enums.MessageType.ByPass"/> via
-        ///     <br></br>
-        ///     <see cref="IClient.SendPONG"/>
-        /// </summary>
-        [Fact]
-        public void Client_Raises_OnThrottled_NO()
-        {
-            // create one logger per test-method! - cause one file per test-method is generated
-            ILogger<T> logger = TestLogHelper.GetLogger<T>();
-            ISendOptions messageSendOptions = new SendOptions(0);
-            IClientOptions clientOptions = new ClientOptions(messageSendOptions: messageSendOptions);
-            T? client = GetClient(logger, clientOptions);
-            Assert.NotNull(client);
-            try
-            {
-                ManualResetEvent pauseConnected = new ManualResetEvent(false);
-
-                Assert.Raises<OnMessageThrottledEventArgs>(
-                    h => client.OnMessageThrottled += h,
-                    h => client.OnMessageThrottled -= h,
-                     () =>
-                     {
-                         client.OnConnected += (sender, e) =>
-                         {
-                             client.SendPONG();
-                             pauseConnected.Set();
-                         };
-
-                         client.OnMessageThrottled += (sender, e) =>
-                         {
-                             Assert.NotNull(e);
-                             Assert.Fail(e.ToString());
-                         };
-
-                         client.Open();
-                         Assert.True(pauseConnected.WaitOne(5_000));
-                     });
-            }
-            catch (Exception e)
-            {
-                // this is good in this case
-                Assert.IsType<RaisesException>(e);
-                Assert.StartsWith("(No event was raised)", e.Message);
             }
             finally
             {

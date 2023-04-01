@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,7 +14,6 @@ namespace TwitchLib.Communication.Services
     /// <summary>
     ///     just to check connection state
     /// </summary>
-    [SuppressMessage("Style", "IDE0058")]
     internal class ConnectionWatchDog<T> where T : IDisposable
     {
 
@@ -86,7 +84,6 @@ namespace TwitchLib.Communication.Services
         private void MonitorTaskAction()
         {
             LOGGER?.TraceMethodCall(GetType());
-            int millisecondsGone = 0;
             int delayInMilliseconds = 200;
             try
             {
@@ -120,16 +117,7 @@ namespace TwitchLib.Communication.Services
                         // and we indicate that StateChange
                         Client.RaiseStateChanged(new OnStateChangedEventArgs() { IsConnected = true, WasConnected = false });
                     }
-
-                    //Check every 60s for Response
-                    if (millisecondsGone >= 60_000)
-                    {
-                        LOGGER?.TraceAction(GetType(), "Send PING");
-                        Client.SendPING();
-                        millisecondsGone = 0;
-                    }
                     Task.Delay(delayInMilliseconds).GetAwaiter().GetResult();
-                    millisecondsGone += delayInMilliseconds;
                 }
             }
             catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))

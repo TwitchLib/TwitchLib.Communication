@@ -1,6 +1,4 @@
-﻿using System;
-
-using TwitchLib.Communication.Enums;
+﻿using TwitchLib.Communication.Enums;
 using TwitchLib.Communication.Models;
 
 namespace TwitchLib.Communication.Interfaces
@@ -28,23 +26,5 @@ namespace TwitchLib.Communication.Interfaces
         /// Use Secure Connection [SSL] (default: true)
         /// </summary>
         bool UseSsl { get; }
-        /// <summary>
-        /// Minimum time between sending items from the queue [in ms] (default 50ms).
-        /// </summary>
-        ushort SendDelay { get; }
-        /// <summary>
-        ///     Period Between each reset of the throttling instance window.
-        ///     <br></br>
-        ///     is always set to 30 seconds and you cannot change it
-        ///     <br></br>
-        ///     <br></br>
-        ///     <list type="bullet">
-        ///         <item>
-        ///             <see href="https://dev.twitch.tv/docs/irc/#rate-limits"/>
-        ///         </item>
-        ///     </list>
-        /// </summary>
-        TimeSpan ThrottlingPeriod { get; }
-        ISendOptions MessageSendOptions { get; }
     }
 }

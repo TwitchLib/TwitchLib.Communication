@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
 
-using TwitchLib.Communication.Enums;
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Extensions;
 using TwitchLib.Communication.Interfaces;
@@ -51,9 +50,6 @@ namespace TwitchLib.Communication.Clients
         public event EventHandler<OnErrorEventArgs> OnError;
         public event EventHandler<OnFatalErrorEventArgs> OnFatality;
         public event EventHandler<OnMessageEventArgs> OnMessage;
-        public event EventHandler<OnMessageThrottledEventArgs> OnMessageThrottled;
-        [Obsolete("Whispers are no longer part of IRC.")]
-        public event EventHandler<OnWhisperThrottledEventArgs> OnWhisperThrottled;
         public event EventHandler<OnSendFailedEventArgs> OnSendFailed;
         public event EventHandler<OnStateChangedEventArgs> OnStateChanged;
         public event EventHandler<OnConnectedEventArgs> OnReconnected;
@@ -86,7 +82,6 @@ namespace TwitchLib.Communication.Clients
         ///     whenever a call to <see cref="CancellationTokenSource.Cancel()"/> is made
         /// </summary>
         private CancellationTokenSource CancellationTokenSource { get; set; }
-        private ThrottlerService<T> Throttler { get; }
         private NetworkServices<T> NetworkServices { get; }
         #endregion properties private
 
@@ -106,31 +101,13 @@ namespace TwitchLib.Communication.Clients
             //}
             CancellationTokenSource = new CancellationTokenSource();
             Options = options ?? new ClientOptions();
-            Throttler = new ThrottlerService<T>(this,
-                                                Options.MessageSendOptions,
-                                                logger);
             NetworkServices = new NetworkServices<T>(this,
-                                                     Throttler,
                                                      logger);
         }
         #endregion ctor(s)
 
 
         #region invoker/raiser internal
-
-        /// <summary>
-        ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
-        /// </summary>
-        internal void RaiseMessageThrottled(OnMessageThrottledEventArgs eventArgs)
-        {
-            LOGGER?.TraceMethodCall(GetType());
-            if (Token.IsCancellationRequested)
-            {
-                return;
-            }
-            OnMessageThrottled?.Invoke(this, eventArgs);
-        }
-
         /// <summary>
         ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
@@ -216,15 +193,17 @@ namespace TwitchLib.Communication.Clients
 
 
         #region methods public
-        public bool SendPONG()
+        public void Send(string message)
         {
             LOGGER?.TraceMethodCall(GetType());
-            return Throttler.Enqueue("PONG", MessageType.ByPass);
-        }
-        public bool Send(string message)
-        {
-            LOGGER?.TraceMethodCall(GetType());
-            return Throttler.Enqueue(message, MessageType.Message);
+            try
+            {
+                SendIRC(message);
+            }
+            catch (Exception e)
+            {
+                RaiseSendFailed(new OnSendFailedEventArgs() { Exception = e, Data = message });
+            }
         }
 
         [Obsolete("Whispers are no longer part of IRC.")]
@@ -479,11 +458,6 @@ namespace TwitchLib.Communication.Clients
         ///     the corresponding <see cref="Task"/> is held by <see cref="Services.NetworkServices"/>
         /// </summary>
         internal abstract void ListenTaskAction();
-        internal bool SendPING()
-        {
-            LOGGER?.TraceMethodCall(GetType());
-            return Throttler.Enqueue("PING", MessageType.ByPass);
-        }
         #endregion methods internal
     }
 }

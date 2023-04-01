@@ -30,7 +30,8 @@ namespace TwitchLib.Communication.Tests.Clients
     [SuppressMessage("Style", "CA2254")]
     public abstract class AClientTestsBase<T> where T : IClient
     {
-        private static readonly uint waitAfterDispose = 3;
+        private static uint WaitAfterDispose => 3;
+        private static TimeSpan WaitOneDuration => TimeSpan.FromSeconds(5);
         public AClientTestsBase() { }
         [Fact]
         public void Client_Raises_OnConnected_EventArgs()
@@ -50,7 +51,7 @@ namespace TwitchLib.Communication.Tests.Clients
                     {
                         client.OnConnected += (sender, e) => pauseConnected.Set();
                         client.Open();
-                        Assert.True(pauseConnected.WaitOne(15000));
+                        Assert.True(pauseConnected.WaitOne(WaitOneDuration));
                     });
             }
             catch (Exception e)
@@ -81,12 +82,12 @@ namespace TwitchLib.Communication.Tests.Clients
                     {
                         client.OnConnected += (sender, e) =>
                         {
-                            Task.Delay(3000).GetAwaiter().GetResult();
+                            Task.Delay(WaitOneDuration).GetAwaiter().GetResult();
                             client.Close();
                         };
                         client.OnDisconnected += (sender, e) => pauseDisconnected.Set();
                         client.Open();
-                        Assert.True(pauseDisconnected.WaitOne(200000));
+                        Assert.True(pauseDisconnected.WaitOne(WaitOneDuration));
                     });
             }
             catch (Exception e)
@@ -120,7 +121,7 @@ namespace TwitchLib.Communication.Tests.Clients
                          client.OnReconnected += (s, e) => pauseReconnected.Set();
                          client.Open();
 
-                         Assert.True(pauseReconnected.WaitOne(20000));
+                         Assert.True(pauseReconnected.WaitOne(WaitOneDuration));
                      });
             }
             catch (Exception e)
@@ -185,8 +186,8 @@ namespace TwitchLib.Communication.Tests.Clients
 
                          client.Open();
                          client.Send("PING");
-                         Assert.True(pauseConnected.WaitOne(120_000));
-                         Assert.True(pauseReadMessage.WaitOne(120_000));
+                         Assert.True(pauseConnected.WaitOne(WaitOneDuration));
+                         Assert.True(pauseReadMessage.WaitOne(WaitOneDuration));
                      });
             }
             catch (Exception e)
@@ -202,7 +203,7 @@ namespace TwitchLib.Communication.Tests.Clients
         private static void TheFinally(T? client)
         {
             client?.Dispose();
-            Task.Delay(TimeSpan.FromSeconds(waitAfterDispose)).GetAwaiter().GetResult();
+            Task.Delay(TimeSpan.FromSeconds(WaitAfterDispose)).GetAwaiter().GetResult();
         }
         private static TClient? GetClient<TClient>(ILogger<TClient> logger, IClientOptions? options = null)
         {

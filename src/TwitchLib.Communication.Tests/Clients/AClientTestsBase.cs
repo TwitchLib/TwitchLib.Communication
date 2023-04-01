@@ -185,7 +185,7 @@ namespace TwitchLib.Communication.Tests.Clients
                          };
 
                          client.Open();
-                         client.Send("PING");
+                         Assert.True(client.Send("PING"));
                          Assert.True(pauseConnected.WaitOne(WaitOneDuration));
                          Assert.True(pauseReadMessage.WaitOne(WaitOneDuration));
                      });

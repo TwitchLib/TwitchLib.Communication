@@ -208,13 +208,6 @@ namespace TwitchLib.Communication.Clients
             }
         }
 
-        [Obsolete("Whispers are no longer part of IRC.")]
-        public bool SendWhisper(string message)
-        {
-            LOGGER?.TraceMethodCall(GetType());
-            return false;
-        }
-
         public bool Open()
         {
             LOGGER?.TraceMethodCall(GetType());

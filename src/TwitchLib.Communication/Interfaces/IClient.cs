@@ -115,18 +115,6 @@ namespace TwitchLib.Communication.Interfaces
         ///     <see langword="false"/> otherwise
         /// </returns>
         bool Send(string message);
-
-        /// <summary>
-        ///     Queue a Whisper to Send to the server as a String.
-        /// </summary>
-        /// <param name="message">
-        ///     The Whisper To Queue
-        /// </param>
-        /// <returns>
-        ///     Returns True if was successfully queued. False if it fails.
-        /// </returns>
-        [Obsolete("Whispers are no longer part of IRC.")]
-        bool SendWhisper(string message);
         #endregion methods
     }
 }

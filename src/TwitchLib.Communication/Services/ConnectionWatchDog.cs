@@ -95,8 +95,6 @@ namespace TwitchLib.Communication.Services
                     if (!Client.IsConnected)
                     {
                         LOGGER?.TraceAction(GetType(), "Client isnt connected anymore");
-                        // indicate, that the client isnt connected anymore
-                        Client.RaiseStateChanged(new OnStateChangedEventArgs() { IsConnected = false, WasConnected = true });
                         // no call to close needed,
                         // ReconnectInternal() calls the correct Close-Method within the Client
                         // ReconnectInternal() makes attempts to reconnect according to the ReconnectionPolicy within the IClientOptions
@@ -113,9 +111,6 @@ namespace TwitchLib.Communication.Services
                             break;
                         }
                         LOGGER?.TraceAction(GetType(), "Client reconnected");
-                        // otherwise the Client should be connected again
-                        // and we indicate that StateChange
-                        Client.RaiseStateChanged(new OnStateChangedEventArgs() { IsConnected = true, WasConnected = false });
                     }
                     Task.Delay(delayInMilliseconds).GetAwaiter().GetResult();
                 }

@@ -53,7 +53,6 @@ namespace TwitchLib.Communication.Clients
         public event EventHandler<OnFatalErrorEventArgs> OnFatality;
         public event EventHandler<OnMessageEventArgs> OnMessage;
         public event EventHandler<OnSendFailedEventArgs> OnSendFailed;
-        public event EventHandler<OnStateChangedEventArgs> OnStateChanged;
         public event EventHandler<OnConnectedEventArgs> OnReconnected;
         #endregion events public
 
@@ -185,11 +184,6 @@ namespace TwitchLib.Communication.Clients
         {
             LOGGER?.TraceMethodCall(GetType());
             OnConnected?.Invoke(this, new OnConnectedEventArgs());
-        }
-        internal void RaiseStateChanged(OnStateChangedEventArgs eventArgs)
-        {
-            LOGGER?.TraceMethodCall(GetType());
-            OnStateChanged?.Invoke(this, eventArgs);
         }
         #endregion invoker/raiser internal
 

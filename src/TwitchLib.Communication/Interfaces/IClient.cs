@@ -54,11 +54,6 @@ namespace TwitchLib.Communication.Interfaces
         event EventHandler<OnSendFailedEventArgs> OnSendFailed;
 
         /// <summary>
-        ///     Fires when the connection state changes
-        /// </summary>
-        event EventHandler<OnStateChangedEventArgs> OnStateChanged;
-
-        /// <summary>
         ///     Fires when the client reconnects automatically
         /// </summary>
         event EventHandler<OnConnectedEventArgs> OnReconnected;

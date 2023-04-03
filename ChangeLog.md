@@ -40,7 +40,8 @@
         - it has never ever been used/raised
 - `event EventHandler<OnMessageThrottledEventArgs> OnMessageThrottled;`
     - because `ThrottlerService` is now part of `TwitchLib.Client`
-
+- `event EventHandler<OnStateChangedEventArgs> OnStateChanged;`
+    - neither used by `TwitchLib.Client` nor by `TwitchLib.PubSub`
 ---
 
 #### ClientOptions
@@ -54,7 +55,7 @@
     - `TimeSpan WhisperThrottlingPeriod { get; set; }`
     - `int WhispersAllowedInPeriod { get; set; }`
     - `int WhisperQueueCapacity { get; set; }`
-##### Moved {#ClientOptions.Moved}
+##### <span id="ClientOptions.Moved">Moved</span>
 - the following properties went to `TwitchLib.Client.Models.SendOptions`
     - `int SendQueueCapacity { get; set; }`
     - `TimeSpan SendCacheItemTimeout { get; set; }`
@@ -68,7 +69,13 @@
 - now the `ConnectionWatchDog` enforces reconnect according to the `ReconnectionPolicy`
 - `ConnectionWatchDog` does not send `PING :tmi.twitch.tv`-messages anymore
     - `TwitchLib.Client` receives `PING :tmi.twitch.tv`-messages and has to reply with `PONG :tmi.twitch.tv`
+        - https://dev.twitch.tv/docs/irc/#keepalive-messages
+        - `TwitchLib.Client` does so
+            - it handles received PING-messages
     - `TwitchLib.PubSub` has to send `PING :tmi.twitch.tv` within at least every five minutes
+        - https://dev.twitch.tv/docs/pubsub/#connection-management
+        - `TwitchLib.PubSub` does so
+            - it has its own PING- and PONG-Timer
 
 ---
 
@@ -86,3 +93,9 @@
         - `ushort SendDelay { get; set; }`
         - `TimeSpan ThrottlingPeriod { get; set; }`
         - `int MessagesAllowedInPeriod { get; set; }`
+
+---
+
+#### OnStateChangedEventArgs
+- removed
+- neither used by `TwitchLib.Client` nor by `TwitchLib.PubSub`

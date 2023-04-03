@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.WebSockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
@@ -15,7 +16,6 @@ namespace TwitchLib.Communication.Clients
 
     public class WebSocketClient : AClientBase<ClientWebSocket>
     {
-        //private readonly object sync = new object();
         #region properties protected
         protected override string URL { get; }
         #endregion properties protected
@@ -128,7 +128,6 @@ namespace TwitchLib.Communication.Clients
             // links from within this thread:
             // the 4th point: https://www.codetinkerer.com/2018/06/05/aspnet-core-websockets.html
             // https://github.com/dotnet/corefx/blob/d6b11250b5113664dd3701c25bdf9addfacae9cc/src/Common/src/System/Net/WebSockets/ManagedWebSocket.cs#L22-L28
-            //lock (this.sync) {
             if (Client == null)
             {
                 Exception ex = new InvalidOperationException($"{nameof(Client)} was null!");
@@ -142,7 +141,6 @@ namespace TwitchLib.Communication.Clients
                                              true,
                                              Token);
             sendTask.GetAwaiter().GetResult();
-            //}
         }
         protected override void SpecificClientConnect()
         {
@@ -177,7 +175,7 @@ namespace TwitchLib.Communication.Clients
 
                 // avoid deletion of using decleration through code-cleanups/save-actions
                 // by using the fully qualified name
-                using (System.Threading.CancellationTokenSource delayTaskCancellationTokenSource = new System.Threading.CancellationTokenSource())
+                using (CancellationTokenSource delayTaskCancellationTokenSource = new CancellationTokenSource())
                 {
                     Task connectTask = Client.ConnectAsync(new Uri(URL),
                                                            Token);

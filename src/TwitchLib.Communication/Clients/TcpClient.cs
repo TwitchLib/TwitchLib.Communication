@@ -14,8 +14,6 @@ namespace TwitchLib.Communication.Clients
 
     public class TcpClient : AClientBase<System.Net.Sockets.TcpClient>
     {
-        //private readonly object sync = new object();
-
         #region properties protected
         protected override string URL => "irc.chat.twitch.tv";
         #endregion properties protected
@@ -88,7 +86,6 @@ namespace TwitchLib.Communication.Clients
             // this method should only be called from 'AClientBase.Send()'
             // where its call gets synchronized/locked
             // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.networkstream?view=netstandard-2.0#remarks
-            //lock (this.sync) {
             if (Writer == null)
             {
                 Exception ex = new InvalidOperationException($"{nameof(Writer)} was null!");
@@ -98,7 +95,6 @@ namespace TwitchLib.Communication.Clients
             }
             Writer.WriteLine(message);
             Writer.Flush();
-            //}
         }
         protected override void SpecificClientConnect()
         {

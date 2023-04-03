@@ -41,26 +41,6 @@ namespace TwitchLib.Communication.Clients
 
 
         #region methods internal
-        internal override void SendIRC(string message)
-        {
-            LOGGER?.TraceMethodCall(GetType());
-
-            // this is not thread safe,
-            // but the throttler service is the only one,
-            // that may call ist and calls it!
-            // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.networkstream?view=netstandard-2.0#remarks
-            //lock (this.sync) {
-            if (Writer == null)
-            {
-                Exception ex = new InvalidOperationException($"{nameof(Writer)} was null!");
-                LOGGER?.LogExceptionAsError(GetType(), ex);
-                RaiseFatal(ex);
-                throw ex;
-            }
-            Writer.WriteLine(message);
-            Writer.Flush();
-            //}
-        }
         internal override void ListenTaskAction()
         {
             LOGGER?.TraceMethodCall(GetType());
@@ -100,6 +80,26 @@ namespace TwitchLib.Communication.Clients
 
 
         #region methods protected
+        protected override void SpecificClientSend(string message)
+        {
+            LOGGER?.TraceMethodCall(GetType());
+
+            // this is not thread safe
+            // this method should only be called from 'AClientBase.Send()'
+            // where its call gets synchronized/locked
+            // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.networkstream?view=netstandard-2.0#remarks
+            //lock (this.sync) {
+            if (Writer == null)
+            {
+                Exception ex = new InvalidOperationException($"{nameof(Writer)} was null!");
+                LOGGER?.LogExceptionAsError(GetType(), ex);
+                RaiseFatal(ex);
+                throw ex;
+            }
+            Writer.WriteLine(message);
+            Writer.Flush();
+            //}
+        }
         protected override void SpecificClientConnect()
         {
             LOGGER?.TraceMethodCall(GetType());

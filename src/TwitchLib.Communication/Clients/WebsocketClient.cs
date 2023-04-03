@@ -49,35 +49,6 @@ namespace TwitchLib.Communication.Clients
 
 
         #region methods internal
-        internal override void SendIRC(string message)
-        {
-            LOGGER?.TraceMethodCall(GetType());
-
-            // this is not thread safe,
-            // but the throttler service is the only one,
-            // that may call it and calls it!
-
-
-            // https://stackoverflow.com/a/59619916
-            // links from within this thread:
-            // the 4th point: https://www.codetinkerer.com/2018/06/05/aspnet-core-websockets.html
-            // https://github.com/dotnet/corefx/blob/d6b11250b5113664dd3701c25bdf9addfacae9cc/src/Common/src/System/Net/WebSockets/ManagedWebSocket.cs#L22-L28
-            //lock (this.sync) {
-            if (Client == null)
-            {
-                Exception ex = new InvalidOperationException($"{nameof(Client)} was null!");
-                LOGGER?.LogExceptionAsError(GetType(), ex);
-                RaiseFatal(ex);
-                throw ex;
-            }
-            byte[] bytes = Encoding.UTF8.GetBytes(message);
-            Task sendTask = Client.SendAsync(new ArraySegment<byte>(bytes),
-                                             WebSocketMessageType.Text,
-                                             true,
-                                             Token);
-            sendTask.GetAwaiter().GetResult();
-            //}
-        }
         internal override void ListenTaskAction()
         {
             LOGGER?.TraceMethodCall(GetType());
@@ -144,6 +115,35 @@ namespace TwitchLib.Communication.Clients
 
 
         #region methods protected
+        protected override void SpecificClientSend(string message)
+        {
+            LOGGER?.TraceMethodCall(GetType());
+
+            // this is not thread safe
+            // this method should only be called from 'AClientBase.Send()'
+            // where its call gets synchronized/locked
+            // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.networkstream?view=netstandard-2.0#remarks
+
+            // https://stackoverflow.com/a/59619916
+            // links from within this thread:
+            // the 4th point: https://www.codetinkerer.com/2018/06/05/aspnet-core-websockets.html
+            // https://github.com/dotnet/corefx/blob/d6b11250b5113664dd3701c25bdf9addfacae9cc/src/Common/src/System/Net/WebSockets/ManagedWebSocket.cs#L22-L28
+            //lock (this.sync) {
+            if (Client == null)
+            {
+                Exception ex = new InvalidOperationException($"{nameof(Client)} was null!");
+                LOGGER?.LogExceptionAsError(GetType(), ex);
+                RaiseFatal(ex);
+                throw ex;
+            }
+            byte[] bytes = Encoding.UTF8.GetBytes(message);
+            Task sendTask = Client.SendAsync(new ArraySegment<byte>(bytes),
+                                             WebSocketMessageType.Text,
+                                             true,
+                                             Token);
+            sendTask.GetAwaiter().GetResult();
+            //}
+        }
         protected override void SpecificClientConnect()
         {
             LOGGER?.TraceMethodCall(GetType());

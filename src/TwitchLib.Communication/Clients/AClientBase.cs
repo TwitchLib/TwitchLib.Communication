@@ -339,6 +339,18 @@ namespace TwitchLib.Communication.Clients
 
         #region methods protected
         /// <summary>
+        ///     specific client send method
+        /// </summary>
+        /// <param name="message">
+        ///     IRC-Messsage
+        /// </param>
+        /// <returns>
+        ///     <see langword="true"/>, if the message should be sent
+        ///     <br></br>
+        ///     <see langword="false"/> otherwise
+        /// </returns>
+        protected abstract void SpecificClientSend(string message);
+        /// <summary>
         ///     to instantiate the underlying
         ///     <list>
         ///         <item>
@@ -409,21 +421,6 @@ namespace TwitchLib.Communication.Clients
 
 
         #region methods internal
-        /// <summary>
-        ///     the 'real' send
-        ///     <br></br>
-        ///     <br></br>
-        ///     should only be used by <see cref="Services.ThrottlerService"/>
-        /// </summary>
-        /// <param name="message">
-        ///     IRC-Messsage
-        /// </param>
-        /// <returns>
-        ///     <see langword="true"/>, if the message should be sent
-        ///     <br></br>
-        ///     <see langword="false"/> otherwise
-        /// </returns>
-        internal abstract void SendIRC(string message);
         /// <summary>
         ///     to issue a reconnect
         ///     <br></br>

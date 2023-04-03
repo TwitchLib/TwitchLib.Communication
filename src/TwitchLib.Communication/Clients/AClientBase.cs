@@ -28,6 +28,8 @@ namespace TwitchLib.Communication.Clients
     /// </summary>
     public abstract class AClientBase<T> : IClient where T : IDisposable
     {
+        private static readonly object LOCK = new object();
+
         #region properties protected
         protected ILogger LOGGER { get; }
         protected abstract string URL { get; }
@@ -198,8 +200,11 @@ namespace TwitchLib.Communication.Clients
             LOGGER?.TraceMethodCall(GetType());
             try
             {
-                SendIRC(message);
-                return true;
+                lock (LOCK)
+                {
+                    SpecificClientSend(message);
+                    return true;
+                }
             }
             catch (Exception e)
             {

@@ -32,6 +32,7 @@ namespace TwitchLib.Communication.Services
         /// </summary>
         private CancellationTokenSource CancellationTokenSource { get; set; }
         private CancellationToken Token => (CancellationToken) (CancellationTokenSource?.Token);
+        private int MonitorTaskDelayInMilliseconds => 200;
         #endregion properties private
 
 
@@ -73,6 +74,9 @@ namespace TwitchLib.Communication.Services
         {
             LOGGER?.TraceMethodCall(GetType());
             CancellationTokenSource?.Cancel();
+            // give MonitorTaskAction a chance to catch cancellation
+            // otherwise it may result in an Exception
+            Task.Delay(MonitorTaskDelayInMilliseconds * 2).GetAwaiter().GetResult();
             CancellationTokenSource?.Dispose();
             // set it to null for the check within this.StartMonitorTask()
             CancellationTokenSource = null;
@@ -84,7 +88,6 @@ namespace TwitchLib.Communication.Services
         private void MonitorTaskAction()
         {
             LOGGER?.TraceMethodCall(GetType());
-            int delayInMilliseconds = 200;
             try
             {
                 while (Token != null && !Token.IsCancellationRequested)
@@ -112,7 +115,7 @@ namespace TwitchLib.Communication.Services
                         }
                         LOGGER?.TraceAction(GetType(), "Client reconnected");
                     }
-                    Task.Delay(delayInMilliseconds).GetAwaiter().GetResult();
+                    Task.Delay(MonitorTaskDelayInMilliseconds).GetAwaiter().GetResult();
                 }
             }
             catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))

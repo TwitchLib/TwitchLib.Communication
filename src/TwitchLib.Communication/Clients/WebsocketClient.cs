@@ -27,8 +27,8 @@ namespace TwitchLib.Communication.Clients
 
 
         #region ctors
-        public WebSocketClient(IClientOptions options = null,
-                               ILogger logger = null) : base(options, logger)
+        public WebSocketClient(IClientOptions? options = null,
+                               ILogger? logger = null) : base(options, logger)
         {
             switch (Options.ClientType)
             {
@@ -81,7 +81,7 @@ namespace TwitchLib.Communication.Clients
                 catch (Exception ex)
                 {
                     LOGGER?.LogExceptionAsError(GetType(), ex);
-                    RaiseError(new OnErrorEventArgs { Exception = ex });
+                    RaiseError(new OnErrorEventArgs(ex));
                     break;
                 }
 
@@ -98,7 +98,7 @@ namespace TwitchLib.Communication.Clients
 
                     case WebSocketMessageType.Text:
                         message += Encoding.UTF8.GetString(buffer).TrimEnd('\0');
-                        RaiseMessage(new OnMessageEventArgs() { Message = message });
+                        RaiseMessage(new OnMessageEventArgs(message));
                         break;
                     case WebSocketMessageType.Binary:
                         break;

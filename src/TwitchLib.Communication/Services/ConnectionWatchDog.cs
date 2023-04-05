@@ -18,7 +18,7 @@ namespace TwitchLib.Communication.Services
     {
 
         #region properties private
-        private ILogger LOGGER { get; }
+        private ILogger? LOGGER { get; }
         private AClientBase<T> Client { get; }
         /// <summary>
         ///     <list>
@@ -31,14 +31,14 @@ namespace TwitchLib.Communication.Services
         ///     </list>
         /// </summary>
         private CancellationTokenSource CancellationTokenSource { get; set; }
-        private CancellationToken Token => (CancellationToken) (CancellationTokenSource?.Token);
+        private CancellationToken Token => CancellationTokenSource.Token;
         private int MonitorTaskDelayInMilliseconds => 200;
         #endregion properties private
 
 
         #region ctors
         internal ConnectionWatchDog(AClientBase<T> client,
-                                    ILogger logger = null)
+                                    ILogger? logger = null)
         {
             LOGGER = logger;
             Client = client;
@@ -126,7 +126,7 @@ namespace TwitchLib.Communication.Services
             catch (Exception ex)
             {
                 LOGGER?.LogExceptionAsError(GetType(), ex);
-                Client.RaiseError(new OnErrorEventArgs { Exception = ex });
+                Client.RaiseError(new OnErrorEventArgs(ex));
                 Client.RaiseFatal();
 
                 // to ensure CancellationTokenSource is set to null again

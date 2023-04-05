@@ -24,13 +24,13 @@ namespace TwitchLib.Communication.Services
         ///     get is never used, cause the <see cref="Task"/> is canceled by the <see cref="Token"/>
         /// </summary>
         [SuppressMessage("Style", "IDE0052")]
-        private Task ListenTask { get; set; }
-        private Task MonitorTask { get; set; }
+        private Task? ListenTask { get; set; }
+        private Task? MonitorTask { get; set; }
         #endregion properties private: Tasks
 
 
         #region properties private
-        private ILogger LOGGER { get; }
+        private ILogger? LOGGER { get; }
         private CancellationToken Token => Client.Token;
         private AClientBase<T> Client { get; }
         #endregion properties private
@@ -43,7 +43,7 @@ namespace TwitchLib.Communication.Services
 
         #region ctors
         internal NetworkServices(AClientBase<T> client,
-                                 ILogger logger = null)
+                                 ILogger? logger = null)
         {
             LOGGER = logger;
             Client = client;

@@ -21,8 +21,8 @@ namespace TwitchLib.Communication.Clients
 
         #region properties private
         private int Port => Options.UseSsl ? 443 : 80;
-        private StreamReader Reader { get; set; }
-        private StreamWriter Writer { get; set; }
+        private StreamReader? Reader { get; set; }
+        private StreamWriter? Writer { get; set; }
         #endregion properties private
 
 
@@ -33,8 +33,8 @@ namespace TwitchLib.Communication.Clients
 
         #region ctors
 
-        public TcpClient(IClientOptions options = null,
-                         ILogger logger = null) : base(options, logger) { }
+        public TcpClient(IClientOptions? options = null,
+                         ILogger? logger = null) : base(options, logger) { }
         #endregion ctors
 
 
@@ -59,7 +59,7 @@ namespace TwitchLib.Communication.Clients
                         continue;
                     }
 
-                    RaiseMessage(new OnMessageEventArgs { Message = input });
+                    RaiseMessage(new OnMessageEventArgs(input));
                 }
                 catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))
                 {
@@ -69,7 +69,7 @@ namespace TwitchLib.Communication.Clients
                 catch (Exception ex)
                 {
                     LOGGER?.LogExceptionAsError(GetType(), ex);
-                    RaiseError(new OnErrorEventArgs { Exception = ex });
+                    RaiseError(new OnErrorEventArgs(ex));
                     break;
                 }
             }

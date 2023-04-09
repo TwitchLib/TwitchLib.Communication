@@ -1,93 +1,231 @@
-﻿namespace TwitchLib.Communication.Models
+﻿
+using System;
+
+namespace TwitchLib.Communication.Models
 {
+    /// <summary>
+    ///     Connection/Reconnection-Policy
+    ///     <br></br>
+    ///     <br></br>
+    ///     controls the attempts to make to connect and to reconnect to twitch
+    ///     <br></br>
+    ///     <br></br>
+    ///     to omit reconnects and to only make one attempt to connect to twitch, please use the ctor. <see cref="ReconnectionPolicy(Boolean)"/>
+    /// </summary>
     public class ReconnectionPolicy
     {
-        private readonly int _reconnectStepInterval;
-        private readonly int? _initMaxAttempts;
-        private int _minReconnectInterval;
-        private readonly int _maxReconnectInterval;
-        private int? _maxAttempts;
-        private int _attemptsMade;
+        private readonly int reconnectStepInterval;
+        private readonly int? initMaxAttempts;
+        private int currentReconnectInterval;
+        private readonly int maxReconnectInterval;
+        private int? maxAttempts;
+        private int attemptsMade;
 
+        public bool OmitReconnect { get; }
+
+        /// <summary>
+        ///     this Constructor can/should be used to omit reconnect-attempts
+        /// </summary>
+        /// <param name="omitReconnect">
+        ///     <see langword="true"/> if the <see cref="Interfaces.IClient"/> should not reconnect
+        ///     <br></br>
+        ///     <br></br>
+        ///     passing <see langword="false"/> to this ctor. throws an <see cref="ArgumentOutOfRangeException"/>
+        ///     <br></br>
+        ///     <br></br>
+        ///     <b>Warning:</b>
+        ///     <br></br>
+        ///     omitting the reconnect, impacts <see cref="Interfaces.IClient.Reconnect"/>
+        ///     <br></br>
+        ///     you have to stay in that workflow <see cref="Interfaces.IClient.Open()"/> -> <see cref="Interfaces.IClient.Close()"/> -> <see cref="Interfaces.IClient.Open()"/>
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///     if <paramref name="omitReconnect"/> is <see langword="false"/>
+        /// </exception>
+        public ReconnectionPolicy(bool omitReconnect)
+        {
+            if (!omitReconnect) throw new ArgumentOutOfRangeException(nameof(omitReconnect), "To use this Constructor, the parameters value has to be true!");
+            OmitReconnect = true;
+            initMaxAttempts = 1;
+            maxAttempts = 1;
+        }
+
+        /// <summary>
+        ///     the <see cref="TwitchLib.Communication.Clients.TcpClient"/> or <see cref="TwitchLib.Communication.Clients.WebSocketClient"/>
+        ///     <b>infinitely</b>
+        ///     attempts to reconnect
+        ///     <br></br>
+        ///     <br></br>
+        ///     with each attempt, the reconnect interval increases by 3_000 milliseconds
+        ///     until it reaches 30_000 milliseconds
+        ///     <br></br>
+        ///     
+        ///     <br></br>
+        ///     <br></br>
+        ///     Example:
+        ///     <br></br>
+        ///     try to connect -> couldnt connect -> wait 3_000 milliseconds -> try to connect -> couldnt connect -> wait 6_000 milliseconds -> and so on
+        /// </summary>
         public ReconnectionPolicy()
         {
-            _reconnectStepInterval = 3000;
-            _minReconnectInterval = 3000;
-            _maxReconnectInterval = 30000;
-            _maxAttempts = null;
-            _initMaxAttempts = null;
-            _attemptsMade = 0;
+            reconnectStepInterval = 3_000;
+            currentReconnectInterval = reconnectStepInterval;
+            maxReconnectInterval = 30_000;
+            maxAttempts = null;
+            initMaxAttempts = null;
+            attemptsMade = 0;
         }
 
-        public void SetMaxAttempts(int attempts)
+        /// <summary>
+        ///     the <see cref="TwitchLib.Communication.Clients.TcpClient"/> or <see cref="TwitchLib.Communication.Clients.WebSocketClient"/>
+        ///     attempts to reconnect for <paramref name="maxAttempts"/> times
+        ///     <br></br>
+        ///     <br></br>
+        ///     with each attempt, the reconnect interval increases by the amount of <paramref name="minReconnectInterval"/>
+        ///     until it reaches <paramref name="maxReconnectInterval"/>
+        ///     <br></br>
+        ///     <br></br>
+        ///     Example:
+        ///     <br></br>
+        ///     <paramref name="minReconnectInterval"/> = 3_000
+        ///     <br></br>
+        ///     <paramref name="maxReconnectInterval"/> = 30_000
+        ///     <br></br>
+        ///     try to connect -> couldnt connect -> wait 3_000 milliseconds -> try to connect -> couldnt connect -> wait 6_000 milliseconds -> and so on
+        /// </summary>
+        /// <param name="minReconnectInterval">
+        ///     minimum interval in milliseconds
+        /// </param>
+        /// <param name="maxReconnectInterval">
+        ///     maximum interval in milliseconds
+        /// </param>
+        /// <param name="maxAttempts">
+        ///     <see langword="null"/> means <b>infinite</b>; it never stops to try to reconnect
+        /// </param>
+        public ReconnectionPolicy(int minReconnectInterval,
+                                  int maxReconnectInterval,
+                                  int maxAttempts)
         {
-            _maxAttempts = attempts;
-        }
-
-        public void Reset()
-        {
-            _attemptsMade = 0;
-            _minReconnectInterval = _reconnectStepInterval;
-            _maxAttempts = _initMaxAttempts;
-        }
-
-        public void SetAttemptsMade(int count) => _attemptsMade = count;
-
-        public ReconnectionPolicy(int minReconnectInterval, int maxReconnectInterval, int? maxAttempts)
-        {
-            _reconnectStepInterval = minReconnectInterval;
-            _minReconnectInterval = minReconnectInterval > maxReconnectInterval
+            reconnectStepInterval = minReconnectInterval;
+            currentReconnectInterval = minReconnectInterval > maxReconnectInterval
                 ? maxReconnectInterval
                 : minReconnectInterval;
-            _maxReconnectInterval = maxReconnectInterval;
-            _maxAttempts = maxAttempts;
-            _initMaxAttempts = maxAttempts;
-            _attemptsMade = 0;
+            this.maxReconnectInterval = maxReconnectInterval;
+            this.maxAttempts = maxAttempts;
+            initMaxAttempts = maxAttempts;
+            attemptsMade = 0;
         }
 
-        public ReconnectionPolicy(int minReconnectInterval, int maxReconnectInterval)
+        /// <summary>
+        ///     the <see cref="TwitchLib.Communication.Clients.TcpClient"/> or <see cref="TwitchLib.Communication.Clients.WebSocketClient"/>
+        ///     <b>infinitely</b>
+        ///     attempts to reconnect
+        ///     <br></br>
+        ///     <br></br>
+        ///     with each attempt, the reconnect interval increases by the amount of <paramref name="minReconnectInterval"/>
+        ///     until it reaches <paramref name="maxReconnectInterval"/>
+        ///     <br></br>
+        ///     <br></br>
+        ///     Example:
+        ///     <br></br>
+        ///     <paramref name="minReconnectInterval"/> = 3_000
+        ///     <br></br>
+        ///     <paramref name="maxReconnectInterval"/> = 30_000
+        ///     <br></br>
+        ///     try to connect -> couldnt connect -> wait 3_000 milliseconds -> try to connect -> couldnt connect -> wait 6_000 milliseconds -> and so on
+        /// </summary>
+        /// <param name="minReconnectInterval">
+        ///     minimum interval in milliseconds
+        /// </param>
+        /// <param name="maxReconnectInterval">
+        ///     maximum interval in milliseconds
+        /// </param>
+        public ReconnectionPolicy(int minReconnectInterval,
+                                  int maxReconnectInterval)
         {
-            _reconnectStepInterval = minReconnectInterval;
-            _minReconnectInterval = minReconnectInterval > maxReconnectInterval
+            reconnectStepInterval = minReconnectInterval;
+            currentReconnectInterval = minReconnectInterval > maxReconnectInterval
                 ? maxReconnectInterval
                 : minReconnectInterval;
-            _maxReconnectInterval = maxReconnectInterval;
-            _maxAttempts = null;
-            _initMaxAttempts = null;
-            _attemptsMade = 0;
+            this.maxReconnectInterval = maxReconnectInterval;
+            maxAttempts = null;
+            initMaxAttempts = null;
+            attemptsMade = 0;
         }
-
+        /// <summary>
+        ///     the <see cref="TwitchLib.Communication.Clients.TcpClient"/> or <see cref="TwitchLib.Communication.Clients.WebSocketClient"/>
+        ///     <b>infinitely</b>
+        ///      attempts to reconnect every <paramref name="reconnectInterval"/>-milliseconds
+        /// </summary>
+        /// <param name="reconnectInterval">
+        ///     Interval in milliseconds between trying to reconnect
+        /// </param>
         public ReconnectionPolicy(int reconnectInterval)
         {
-            _reconnectStepInterval = reconnectInterval;
-            _minReconnectInterval = reconnectInterval;
-            _maxReconnectInterval = reconnectInterval;
-            _maxAttempts = null;
-            _initMaxAttempts = null;
-            _attemptsMade = 0;
+            reconnectStepInterval = reconnectInterval;
+            currentReconnectInterval = reconnectInterval;
+            maxReconnectInterval = reconnectInterval;
+            maxAttempts = null;
+            initMaxAttempts = null;
+            attemptsMade = 0;
         }
 
-        public ReconnectionPolicy(int reconnectInterval, int? maxAttempts)
+        /// <summary>
+        ///     the <see cref="TwitchLib.Communication.Clients.TcpClient"/> or <see cref="TwitchLib.Communication.Clients.WebSocketClient"/>
+        ///     attempts to reconnect every <paramref name="reconnectInterval"/>-milliseconds for <paramref name="maxAttempts"/> times
+        /// </summary>
+        /// <param name="reconnectInterval">
+        ///     Interval in milliseconds between trying to reconnect
+        /// </param>
+        /// <param name="maxAttempts">
+        ///     <see langword="null"/> means <b>infinite</b>; it never stops to try to reconnect
+        /// </param>
+        public ReconnectionPolicy(int reconnectInterval,
+                                  int? maxAttempts)
         {
-            _reconnectStepInterval = reconnectInterval;
-            _minReconnectInterval = reconnectInterval;
-            _maxReconnectInterval = reconnectInterval;
-            _maxAttempts = maxAttempts;
-            _initMaxAttempts = maxAttempts;
-            _attemptsMade = 0;
+            reconnectStepInterval = reconnectInterval;
+            currentReconnectInterval = reconnectInterval;
+            maxReconnectInterval = reconnectInterval;
+            this.maxAttempts = maxAttempts;
+            initMaxAttempts = maxAttempts;
+            attemptsMade = 0;
+        }
+
+        internal void Reset(bool isReconnect)
+        {
+            if (isReconnect) return;
+            attemptsMade = 0;
+            currentReconnectInterval = reconnectStepInterval;
+            maxAttempts = initMaxAttempts;
         }
 
         internal void ProcessValues()
         {
-            _attemptsMade++;
-            if (_minReconnectInterval < _maxReconnectInterval)
-                _minReconnectInterval += _reconnectStepInterval;
-            if (_minReconnectInterval > _maxReconnectInterval)
-                _minReconnectInterval = _maxReconnectInterval;
+            attemptsMade++;
+            if (currentReconnectInterval < maxReconnectInterval)
+            {
+                currentReconnectInterval += reconnectStepInterval;
+            }
+
+            if (currentReconnectInterval > maxReconnectInterval)
+            {
+                currentReconnectInterval = maxReconnectInterval;
+            }
         }
 
-        public int GetReconnectInterval() => _minReconnectInterval;
+        public int GetReconnectInterval()
+        {
+            return currentReconnectInterval;
+        }
 
-        public bool AreAttemptsComplete() => _attemptsMade == _maxAttempts;
+        public bool AreAttemptsComplete()
+        {
+            if (maxAttempts == null)
+            {
+                return false;
+            }
+
+            return attemptsMade == maxAttempts;
+        }
     }
 }

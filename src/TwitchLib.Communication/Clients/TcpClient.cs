@@ -1,393 +1,194 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Net.Security;
-using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.Extensions.Logging;
+
 using TwitchLib.Communication.Events;
+using TwitchLib.Communication.Extensions;
 using TwitchLib.Communication.Interfaces;
-using TwitchLib.Communication.Models;
-using TwitchLib.Communication.Services;
 
 namespace TwitchLib.Communication.Clients
 {
-    public class TcpClient : IClient
+
+    public class TcpClient : AClientBase<System.Net.Sockets.TcpClient>
     {
-        private int NotConnectedCounter;
-        public TimeSpan DefaultKeepAliveInterval { get; set; }
-        public int SendQueueLength => _throttlers.SendQueue.Count;
-        public int WhisperQueueLength => _throttlers.WhisperQueue.Count;
-        public bool IsConnected => Client?.Connected ?? false;
-        public IClientOptions Options { get; }
+        #region properties protected
+        protected override string URL => "irc.chat.twitch.tv";
+        #endregion properties protected
 
-        public event EventHandler<OnConnectedEventArgs> OnConnected;
-        public event EventHandler<OnDataEventArgs> OnData;
-        public event EventHandler<OnDisconnectedEventArgs> OnDisconnected;
-        public event EventHandler<OnErrorEventArgs> OnError;
-        public event EventHandler<OnFatalErrorEventArgs> OnFatality;
-        public event EventHandler<OnMessageEventArgs> OnMessage;
-        public event EventHandler<OnMessageThrottledEventArgs> OnMessageThrottled;
-        public event EventHandler<OnWhisperThrottledEventArgs> OnWhisperThrottled;
-        public event EventHandler<OnSendFailedEventArgs> OnSendFailed;
-        public event EventHandler<OnStateChangedEventArgs> OnStateChanged;
-        public event EventHandler<OnReconnectedEventArgs> OnReconnected;
 
-        private readonly string _server = "irc.chat.twitch.tv";
-        private int Port => Options != null ? Options.UseSsl ? 443 : 80 : 0;
-        public System.Net.Sockets.TcpClient Client { get; private set; }
-        private StreamReader _reader;
-        private StreamWriter _writer;
-        private readonly Throttlers _throttlers;
-        private CancellationTokenSource _tokenSource = new CancellationTokenSource();
-        private bool _stopServices;
-        private bool _networkServicesRunning;
-        private Task[] _networkTasks;
-        private Task _monitorTask;
+        #region properties private
+        private int Port => Options.UseSsl ? 443 : 80;
+        private StreamReader? Reader { get; set; }
+        private StreamWriter? Writer { get; set; }
+        #endregion properties private
 
-        public TcpClient(IClientOptions options = null)
+
+        #region properties public
+        public override bool IsConnected => Client?.Connected ?? false;
+        #endregion properties public
+
+
+        #region ctors
+
+        public TcpClient(IClientOptions? options = null,
+                         ILogger? logger = null) : base(options, logger) { }
+        #endregion ctors
+
+
+        #region methods internal
+        internal override void ListenTaskAction()
         {
-            Options = options ?? new ClientOptions();
-            _throttlers =
-                new Throttlers(this, Options.ThrottlingPeriod, Options.WhisperThrottlingPeriod)
-                {
-                    TokenSource = _tokenSource
-                };
-            InitializeClient();
-        }
-
-        private void InitializeClient()
-        {
-            // check if services should stop
-            if (_stopServices) { return; }
-
-            Client = new System.Net.Sockets.TcpClient();
-
-            if (_monitorTask == null)
+            LOGGER?.TraceMethodCall(GetType());
+            if (Reader == null)
             {
-                _monitorTask = StartMonitorTask();
-                return;
+                Exception ex = new InvalidOperationException($"{nameof(Reader)} was null!");
+                LOGGER?.LogExceptionAsError(GetType(), ex);
+                RaiseFatal(ex);
+                throw ex;
             }
-
-            if (_monitorTask.IsCompleted) _monitorTask = StartMonitorTask();
-        }
-
-        public bool Open()
-        {
-            // reset some boolean values
-            // especially _stopServices
-            Reset();
-            // now using private _Open()
-            return _Open();
-        }
-
-        /// <summary>
-        ///     for private use only,
-        ///     to be able to check <see cref="_stopServices"/> at the beginning
-        /// </summary>
-        private bool _Open()
-        {
-            // check if services should stop
-            if (_stopServices) { return false; }
-
-            try
+            while (IsConnected)
             {
-                if (IsConnected) return true;
-
-                Task.Run(() => { 
-                    InitializeClient();
-                    Client.Connect(_server, Port);
-                    if (Options.UseSsl)
-                    {
-                        var ssl = new SslStream(Client.GetStream(), false);
-                        ssl.AuthenticateAsClient(_server);
-                        _reader = new StreamReader(ssl);
-                        _writer = new StreamWriter(ssl);
-                    }
-                    else
-                    {
-                        _reader = new StreamReader(Client.GetStream());
-                        _writer = new StreamWriter(Client.GetStream());
-                    }
-                }).Wait(10000);
-
-                if (!IsConnected) return _Open();
-
-                StartNetworkServices();
-                return true;
-
-            }
-            catch (Exception)
-            {
-                InitializeClient();
-                return false;
-            }
-        }
-
-        public void Close(bool callDisconnect = true)
-        {
-            _reader?.Dispose();
-            _writer?.Dispose();
-            Client?.Close();
-
-            _stopServices = callDisconnect;
-            CleanupServices();
-            InitializeClient();
-            OnDisconnected?.Invoke(this, new OnDisconnectedEventArgs());
-        }
-
-        public void Reconnect()
-        {
-            // reset some boolean values
-            // especially _stopServices
-            Reset();
-            // now using private _Reconnect()
-            _Reconnect();
-        }
-
-        /// <summary>
-        ///     for private use only,
-        ///     to be able to check <see cref="_stopServices"/> at the beginning
-        /// </summary>
-        private void _Reconnect()
-        {
-            // check if services should stop
-            if (_stopServices) { return; }
-
-            Task.Run(() =>
-            {
-                Task.Delay(20).Wait();
-                Close();
-                if(Open())
-                {
-                    OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
-                }
-            });
-        }
-
-        public bool Send(string message)
-        {
-            try
-            {
-                if (!IsConnected || SendQueueLength >= Options.SendQueueCapacity)
-                {
-                    return false;
-                }
-
-                _throttlers.SendQueue.Add(new Tuple<DateTime, string>(DateTime.UtcNow, message));
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                OnError?.Invoke(this, new OnErrorEventArgs {Exception = ex});
-                throw;
-            }
-        }
-
-        public bool SendWhisper(string message)
-        {
-            try
-            {
-                if (!IsConnected || WhisperQueueLength >= Options.WhisperQueueCapacity)
-                {
-                    return false;
-                }
-
-                _throttlers.WhisperQueue.Add(new Tuple<DateTime, string>(DateTime.UtcNow, message));
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                OnError?.Invoke(this, new OnErrorEventArgs {Exception = ex});
-                throw;
-            }
-        }
-
-        private void StartNetworkServices()
-        {
-            _networkServicesRunning = true;
-            _networkTasks = new[]
-            {
-                StartListenerTask(),
-                _throttlers.StartSenderTask(),
-                _throttlers.StartWhisperSenderTask()
-            }.ToArray();
-
-            if (!_networkTasks.Any(c => c.IsFaulted)) return;
-            _networkServicesRunning = false;
-            CleanupServices();
-        }
-
-        public Task SendAsync(string message)
-        {
-            return Task.Run(async () =>
-            {
-                await _writer.WriteLineAsync(message);
-                await _writer.FlushAsync();
-            });
-        }
-
-        private Task StartListenerTask()
-        {
-            return Task.Run(async () =>
-            {
-                while (IsConnected && _networkServicesRunning)
-                {
-                    try
-                    {
-                        var input = await _reader.ReadLineAsync();
-
-                        if (input is null && IsConnected)
-                        {
-                            Send("PING");
-                            Task.Delay(500).Wait();
-                        }
-
-                        OnMessage?.Invoke(this, new OnMessageEventArgs {Message = input});
-                    }
-                    catch (Exception ex)
-                    {
-                        OnError?.Invoke(this, new OnErrorEventArgs {Exception = ex});
-                    }
-                }
-            });
-        }
-
-        private Task StartMonitorTask()
-        {
-            return Task.Run(() =>
-            {
-                var needsReconnect = false;
-                var checkConnectedCounter = 0;
                 try
                 {
-                    var lastState = IsConnected;
-                    while (!_tokenSource.IsCancellationRequested)
+                    string input = Reader.ReadLine();
+                    if (input is null)
                     {
-                        if (lastState == IsConnected)
-                        {
-                            Thread.Sleep(200);
-
-                            if (!IsConnected)
-                                NotConnectedCounter++;
-                            else
-                                checkConnectedCounter++;
-
-                            if (checkConnectedCounter >= 300) //Check every 60s for Response
-                            {
-                                Send("PING");
-                                checkConnectedCounter = 0;
-                            }
-
-                            switch (NotConnectedCounter)
-                            {
-                                case 25: //Try Reconnect after 5s
-                                case 75: //Try Reconnect after extra 10s
-                                case 150: //Try Reconnect after extra 15s
-                                case 300: //Try Reconnect after extra 30s
-                                case 600: //Try Reconnect after extra 60s
-                                    _Reconnect();
-                                    break;
-                                default:
-                                    {
-                                        if (NotConnectedCounter >= 1200 && NotConnectedCounter % 600 == 0) //Try Reconnect after every 120s from this point
-                                            _Reconnect();
-                                        break;
-                                    }
-                            }
-
-                            if (NotConnectedCounter != 0 && IsConnected)
-                                NotConnectedCounter = 0;
-
-                            continue;
-                        }
-                        OnStateChanged?.Invoke(this, new OnStateChangedEventArgs { IsConnected = IsConnected, WasConnected = lastState });
-
-                        if (IsConnected)
-                            OnConnected?.Invoke(this, new OnConnectedEventArgs());
-
-                        if (!IsConnected && !_stopServices)
-                        {
-                            if (lastState && Options.ReconnectionPolicy != null && !Options.ReconnectionPolicy.AreAttemptsComplete())
-                            {
-                                needsReconnect = true;
-                                break;
-                            }
-                            OnDisconnected?.Invoke(this, new OnDisconnectedEventArgs());
-                        }
-
-                        lastState = IsConnected;
+                        continue;
                     }
+
+                    RaiseMessage(new OnMessageEventArgs(input));
+                }
+                catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))
+                {
+                    // occurs if the Tasks are canceled by the CancelationTokenSource.Token
+                    LOGGER?.LogExceptionAsInformation(GetType(), ex);
                 }
                 catch (Exception ex)
                 {
-                    OnError?.Invoke(this, new OnErrorEventArgs {Exception = ex});
+                    LOGGER?.LogExceptionAsError(GetType(), ex);
+                    RaiseError(new OnErrorEventArgs(ex));
+                    break;
                 }
-
-                if (needsReconnect && !_stopServices)
-                    _Reconnect();
-            }, _tokenSource.Token);
+            }
         }
+        #endregion methods internal
 
-        private void CleanupServices()
+
+        #region methods protected
+        protected override void SpecificClientSend(string message)
         {
-            _tokenSource.Cancel();
-            _tokenSource = new CancellationTokenSource();
-            _throttlers.TokenSource = _tokenSource;
+            LOGGER?.TraceMethodCall(GetType());
 
-            if (!_stopServices) return;
-            if (!(_networkTasks?.Length > 0)) return;
-            if (Task.WaitAll(_networkTasks, 15000)) return;
+            // this is not thread safe
+            // this method should only be called from 'AClientBase.Send()'
+            // where its call gets synchronized/locked
+            // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.networkstream?view=netstandard-2.0#remarks
+            if (Writer == null)
+            {
+                Exception ex = new InvalidOperationException($"{nameof(Writer)} was null!");
+                LOGGER?.LogExceptionAsError(GetType(), ex);
+                RaiseFatal(ex);
+                throw ex;
+            }
+            Writer.WriteLine(message);
+            Writer.Flush();
+        }
+        protected override void SpecificClientConnect()
+        {
+            LOGGER?.TraceMethodCall(GetType());
+            if (Client == null)
+            {
+                Exception ex = new InvalidOperationException($"{nameof(Client)} was null!");
+                LOGGER?.LogExceptionAsError(GetType(), ex);
+                throw ex;
+            }
+            try
+            {
+                // https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/async-scenarios
+#if NET6_0_OR_GREATER
+            // within the following thread:
+            // https://stackoverflow.com/questions/4238345/asynchronously-wait-for-taskt-to-complete-with-timeout
+            // the following answer
+            // NET6_0_OR_GREATER: https://stackoverflow.com/a/68998339
 
-            OnFatality?.Invoke(this,
-                new OnFatalErrorEventArgs
+            Task connectTask = Client.ConnectAsync(URL,
+                                                   Port);
+            Task waitTask = connectTask.WaitAsync(TimeOutEstablishConnection,
+                                                  Token);
+            // GetAwaiter().GetResult() to avoid async in method-signature 'protected override void SpecificClientConnect()';
+            waitTask.GetAwaiter().GetResult();
+#else
+                // within the following thread:
+                // https://stackoverflow.com/questions/4238345/asynchronously-wait-for-taskt-to-complete-with-timeout
+                // the following two answers:
+                // https://stackoverflow.com/a/11191070
+                // https://stackoverflow.com/a/22078975
+
+                // avoid deletion of using-decleration through code-cleanups/save-actions
+                // by using the fully qualified name
+                using (System.Threading.CancellationTokenSource delayTaskCancellationTokenSource = new System.Threading.CancellationTokenSource())
                 {
-                    Reason = "Fatal network error. Network services fail to shut down."
-                });
-
-            // moved to Reset()
-            //_stopServices = false;
-            //_throttlers.Reconnecting = false;
-            //_networkServicesRunning = false;
+                    Task connectTask = Client.ConnectAsync(URL, Port);
+                    Task delayTask = Task.Delay((int) TimeOutEstablishConnection.TotalMilliseconds,
+                                                delayTaskCancellationTokenSource.Token);
+                    Task<Task> task = Task.WhenAny(connectTask, delayTask);
+                    // though 'theTaskThatCompletedFirst' is unused, just to be precise...
+                    Task theTaskThatCompletedFirst = task.GetAwaiter().GetResult();
+                    delayTaskCancellationTokenSource?.Cancel();
+                }
+#endif
+                if (!Client.Connected)
+                {
+                    LOGGER?.TraceAction(GetType(), "Client couldnt establish connection");
+                    return;
+                }
+                LOGGER?.TraceAction(GetType(), "Client established connection successfully");
+                if (Options.UseSsl)
+                {
+                    SslStream ssl = new SslStream(Client.GetStream(), false);
+                    ssl.AuthenticateAsClient(URL);
+                    Reader = new StreamReader(ssl);
+                    Writer = new StreamWriter(ssl);
+                }
+                else
+                {
+                    Reader = new StreamReader(Client.GetStream());
+                    Writer = new StreamWriter(Client.GetStream());
+                }
+            }
+            catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))
+            {
+                // occurs if the Tasks are canceled by the CancelationTokenSource.Token
+                LOGGER?.LogExceptionAsInformation(GetType(), ex);
+            }
+            catch (Exception ex)
+            {
+                LOGGER?.LogExceptionAsError(GetType(), ex);
+            }
         }
-
-        private void Reset()
+        protected override System.Net.Sockets.TcpClient NewClient()
         {
-            _stopServices = false;
-            _throttlers.Reconnecting = false;
-            _networkServicesRunning = false;
+            LOGGER?.TraceMethodCall(GetType());
+            System.Net.Sockets.TcpClient tcpClient = new System.Net.Sockets.TcpClient
+            {
+                // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient.lingerstate?view=netstandard-2.0#remarks
+                LingerState = new System.Net.Sockets.LingerOption(true, 0)
+            };
+            return tcpClient;
         }
-
-        public void WhisperThrottled(OnWhisperThrottledEventArgs eventArgs)
+        protected override void SpecificClientClose()
         {
-            OnWhisperThrottled?.Invoke(this, eventArgs);
-        }
-
-        public void MessageThrottled(OnMessageThrottledEventArgs eventArgs)
-        {
-            OnMessageThrottled?.Invoke(this, eventArgs);
-        }
-
-        public void SendFailed(OnSendFailedEventArgs eventArgs)
-        {
-            OnSendFailed?.Invoke(this, eventArgs);
-        }
-
-        public void Error(OnErrorEventArgs eventArgs)
-        {
-            OnError?.Invoke(this, eventArgs);
-        }
-
-        public void Dispose()
-        {
-            Close();
-            _throttlers.ShouldDispose = true;
-            _tokenSource.Cancel();
-            Thread.Sleep(500);
-            _tokenSource.Dispose();
+            LOGGER?.TraceMethodCall(GetType());
+            Reader?.Close();
+            Reader?.Dispose();
+            Writer?.Close();
+            Writer?.Dispose();
+            Client?.Close();
             Client?.Dispose();
-            GC.Collect();
         }
+        #endregion methods protected
     }
 }

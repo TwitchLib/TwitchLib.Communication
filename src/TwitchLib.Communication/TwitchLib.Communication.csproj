@@ -2,13 +2,11 @@
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
         <VersionPrefix>2.0.0</VersionPrefix>
-        <LangVersion>8.0</LangVersion>
-        <Nullable>enable</Nullable>
         <VersionSuffix>$(VersionSuffix)</VersionSuffix>
         <Authors>swiftyspiffy, Prom3theu5, Syzuna, LuckyNoS7evin</Authors>
         <Company>swiftyspiffy, Prom3theu5, Syzuna, LuckyNoS7evin</Company>
         <Description>Connection library used throughout TwitchLib to replace third party depedencies.</Description>
-        <Copyright>Copyright 2022</Copyright>
+        <Copyright>Copyright 2023</Copyright>
         <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
         <PackageProjectUrl>https://github.com/TwitchLib/TwitchLib.Communication</PackageProjectUrl>
         <PackageIconUrl>https://cdn.syzuna-programs.de/images/twitchlib.png</PackageIconUrl>

@@ -29,7 +29,7 @@ namespace TwitchLib.Communication.Models
         /// <param name="sendDelay">
         ///     <inheritdoc cref="SendDelay"/>
         /// </param>
-        public ClientOptions(ReconnectionPolicy? reconnectionPolicy = null,
+        public ClientOptions(ReconnectionPolicy reconnectionPolicy = null,
                              bool useSsl = true,
                              uint disconnectWait = 1_500,
                              ClientType clientType = ClientType.Chat)

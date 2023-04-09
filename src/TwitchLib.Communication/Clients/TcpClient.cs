@@ -21,8 +21,8 @@ namespace TwitchLib.Communication.Clients
 
         #region properties private
         private int Port => Options.UseSsl ? 6697 : 6667;
-        private StreamReader? Reader { get; set; }
-        private StreamWriter? Writer { get; set; }
+        private StreamReader Reader { get; set; }
+        private StreamWriter Writer { get; set; }
         #endregion properties private
 
 
@@ -33,8 +33,8 @@ namespace TwitchLib.Communication.Clients
 
         #region ctors
 
-        public TcpClient(IClientOptions? options = null,
-                         ILogger? logger = null) : base(options, logger) { }
+        public TcpClient(IClientOptions options = null,
+                         ILogger logger = null) : base(options, logger) { }
         #endregion ctors
 
 

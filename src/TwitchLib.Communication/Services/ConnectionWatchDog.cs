@@ -18,7 +18,7 @@ namespace TwitchLib.Communication.Services
     {
 
         #region properties private
-        private ILogger? LOGGER { get; }
+        private ILogger LOGGER { get; }
         private AClientBase<T> Client { get; }
         /// <summary>
         ///     <list>
@@ -38,7 +38,7 @@ namespace TwitchLib.Communication.Services
 
         #region ctors
         internal ConnectionWatchDog(AClientBase<T> client,
-                                    ILogger? logger = null)
+                                    ILogger logger = null)
         {
             LOGGER = logger;
             Client = client;

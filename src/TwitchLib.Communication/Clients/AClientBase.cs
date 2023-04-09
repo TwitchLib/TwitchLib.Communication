@@ -31,7 +31,7 @@ namespace TwitchLib.Communication.Clients
         private static readonly object LOCK = new object();
 
         #region properties protected
-        protected ILogger? LOGGER { get; }
+        protected ILogger LOGGER { get; }
         protected abstract string URL { get; }
         #endregion properties protected
 
@@ -47,13 +47,13 @@ namespace TwitchLib.Communication.Clients
 
 
         #region events public
-        public event EventHandler<OnConnectedEventArgs>? OnConnected;
-        public event EventHandler<OnDisconnectedEventArgs>? OnDisconnected;
-        public event EventHandler<OnErrorEventArgs>? OnError;
-        public event EventHandler<OnFatalErrorEventArgs>? OnFatality;
-        public event EventHandler<OnMessageEventArgs>? OnMessage;
-        public event EventHandler<OnSendFailedEventArgs>? OnSendFailed;
-        public event EventHandler<OnReconnectedEventArgs>? OnReconnected;
+        public event EventHandler<OnConnectedEventArgs> OnConnected;
+        public event EventHandler<OnDisconnectedEventArgs> OnDisconnected;
+        public event EventHandler<OnErrorEventArgs> OnError;
+        public event EventHandler<OnFatalErrorEventArgs> OnFatality;
+        public event EventHandler<OnMessageEventArgs> OnMessage;
+        public event EventHandler<OnSendFailedEventArgs> OnSendFailed;
+        public event EventHandler<OnReconnectedEventArgs> OnReconnected;
         #endregion events public
 
 
@@ -88,8 +88,8 @@ namespace TwitchLib.Communication.Clients
 
 
         #region ctor(s)
-        internal AClientBase(IClientOptions? options = null,
-                             ILogger? logger = null)
+        internal AClientBase(IClientOptions options = null,
+                             ILogger logger = null)
         {
             LOGGER = logger;
             // INFO: Feedback by Bukk94: not to restrict the Client to those two known types
@@ -161,7 +161,7 @@ namespace TwitchLib.Communication.Clients
         /// <summary>
         ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
-        internal void RaiseFatal(Exception? e = null)
+        internal void RaiseFatal(Exception e = null)
         {
             LOGGER?.TraceMethodCall(GetType());
             if (Token.IsCancellationRequested)

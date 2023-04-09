@@ -27,8 +27,8 @@ namespace TwitchLib.Communication.Clients
 
 
         #region ctors
-        public WebSocketClient(IClientOptions? options = null,
-                               ILogger? logger = null) : base(options, logger)
+        public WebSocketClient(IClientOptions options = null,
+                               ILogger logger = null) : base(options, logger)
         {
             switch (Options.ClientType)
             {

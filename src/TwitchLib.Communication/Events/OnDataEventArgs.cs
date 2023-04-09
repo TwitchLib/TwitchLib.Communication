@@ -2,7 +2,7 @@
 
 namespace TwitchLib.Communication.Events
 {
-    public class OnDataEventArgs : EventArgs
+    public class DataEventArgs : EventArgs
     {
         public byte[] Data;
     }

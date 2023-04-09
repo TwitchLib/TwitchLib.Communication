@@ -2,10 +2,10 @@
 
 namespace TwitchLib.Communication.Events
 {
-    public class OnErrorEventArgs : EventArgs
+    public class ErrorEventArgs : EventArgs
     {
         public Exception Exception { get; }
-        public OnErrorEventArgs(Exception exception)
+        public ErrorEventArgs(Exception exception)
         {
             Exception = exception;
         }

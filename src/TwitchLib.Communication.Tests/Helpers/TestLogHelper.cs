@@ -26,31 +26,31 @@ namespace TwitchLib.Communication.Tests.Helpers
             builder.AppendLine(new string('-', 80));
             NEW_TEST_RUN_INDICATOR = builder.ToString();
         }
-        internal static Microsoft.Extensions.Logging.ILogger<T> GetLogger<T>(LogEventLevel logEventLevel = LogEventLevel.Verbose,
+        internal static ILogger<T> GetLogger<T>(LogEventLevel logEventLevel = LogEventLevel.Verbose,
                                                                              [CallerMemberName] string callerMemberName = "TestMethod")
         {
             Serilog.ILogger logger = GetSerilogLogger<T>(typeof(T).Name,
                                                          callerMemberName,
                                                          logEventLevel);
-            Microsoft.Extensions.Logging.ILoggerFactory loggerFactory = new Serilog.Extensions.Logging.SerilogLoggerFactory(logger);
+            ILoggerFactory loggerFactory = new Serilog.Extensions.Logging.SerilogLoggerFactory(logger);
             return loggerFactory.CreateLogger<T>();
         }
         private static Serilog.ILogger GetSerilogLogger<T>(string typeName,
                                                            string callerMemberName,
                                                            LogEventLevel logEventLevel)
         {
-            Serilog.LoggerConfiguration loggerConfiguration = GetConfiguration(typeName,
+            LoggerConfiguration loggerConfiguration = GetConfiguration(typeName,
                                                                                callerMemberName,
                                                                                logEventLevel);
             Serilog.ILogger logger = loggerConfiguration.CreateLogger().ForContext<T>();
             logger.Information(NEW_TEST_RUN_INDICATOR);
             return logger;
         }
-        private static Serilog.LoggerConfiguration GetConfiguration(string typeName,
+        private static LoggerConfiguration GetConfiguration(string typeName,
                                                                     string callerMemberName,
                                                                     LogEventLevel logEventLevel)
         {
-            Serilog.LoggerConfiguration loggerConfiguration = new Serilog.LoggerConfiguration();
+            LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
             loggerConfiguration.MinimumLevel.Verbose();
             string path = $"../../../Logs/{typeName}/{callerMemberName}.log";
             loggerConfiguration.WriteTo.File(

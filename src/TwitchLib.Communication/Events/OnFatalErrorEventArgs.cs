@@ -3,16 +3,16 @@
 namespace TwitchLib.Communication.Events
 {
 
-    public class OnFatalErrorEventArgs : EventArgs
+    public class FatalErrorEventArgs : EventArgs
     {
         public string Reason { get; }
         public Exception Exception { get; }
-        public OnFatalErrorEventArgs(string reason)
+        public FatalErrorEventArgs(string reason)
         {
             Reason = reason;
         }
 
-        public OnFatalErrorEventArgs(Exception e)
+        public FatalErrorEventArgs(Exception e)
         {
             Reason = e.ToString();
             Exception = e;

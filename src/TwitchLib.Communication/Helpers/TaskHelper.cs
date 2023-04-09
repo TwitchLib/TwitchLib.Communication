@@ -14,7 +14,6 @@ namespace TwitchLib.Communication.Helpers
 #endif
                 && !task.IsCanceled;
 
-
             //if (task == null) return false;
             //switch (task.Status)
             //{

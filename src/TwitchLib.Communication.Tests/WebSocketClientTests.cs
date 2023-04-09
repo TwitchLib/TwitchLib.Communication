@@ -15,12 +15,12 @@ namespace TwitchLib.Communication.Tests
             var client = new WebSocketClient();
             var pauseConnected = new ManualResetEvent(false);
 
-            Assert.Raises<OnConnectedEventArgs>(
-                h => client.OnConnected += h,
-                h => client.OnConnected -= h,
+            Assert.Raises<ConnectedEventArgs>(
+                h => client.Connected += h,
+                h => client.Connected -= h,
                 () =>
                 {
-                    client.OnConnected += (sender, e) => { pauseConnected.Set(); };
+                    client.Connected += (sender, e) => { pauseConnected.Set(); };
                     client.Open();
                     Assert.True(pauseConnected.WaitOne(5000));
                 });
@@ -32,17 +32,17 @@ namespace TwitchLib.Communication.Tests
             var client = new WebSocketClient(new ClientOptions(disconnectWait: 5000));
             var pauseDisconnected = new ManualResetEvent(false);
 
-            Assert.Raises<OnDisconnectedEventArgs>(
-                h => client.OnDisconnected += h,
-                h => client.OnDisconnected -= h,
+            Assert.Raises<DisconnectedEventArgs>(
+                h => client.Disconnected += h,
+                h => client.Disconnected -= h,
                 () =>
                 {
-                    client.OnConnected += async (sender, e) =>
+                    client.Connected += async (sender, e) =>
                     {
                         await Task.Delay(2000);
                         client.Close();
                     };
-                    client.OnDisconnected += (sender, e) =>
+                    client.Disconnected += (sender, e) =>
                     {
                         pauseDisconnected.Set();
                     };
@@ -57,18 +57,18 @@ namespace TwitchLib.Communication.Tests
             var client = new WebSocketClient(new ClientOptions());
             var pauseReconnected = new ManualResetEvent(false);
 
-            Assert.Raises<OnReconnectedEventArgs>(
-                h => client.OnReconnected += h,
-                h => client.OnReconnected -= h,
+            Assert.Raises<ReconnectedEventArgs>(
+                h => client.Reconnected += h,
+                h => client.Reconnected -= h,
                 () =>
                 {
-                    client.OnConnected += async (s, e) =>
+                    client.Connected += async (s, e) =>
                     {
                         await Task.Delay(2000);
                         client.Reconnect();
                     };
 
-                    client.OnReconnected += (s, e) => { pauseReconnected.Set(); };
+                    client.Reconnected += (s, e) => { pauseReconnected.Set(); };
                     client.Open();
 
                     Assert.True(pauseReconnected.WaitOne(20000));
@@ -90,14 +90,14 @@ namespace TwitchLib.Communication.Tests
             var pauseConnected = new ManualResetEvent(false);
             var pauseReadMessage = new ManualResetEvent(false);
 
-            Assert.Raises<OnMessageEventArgs>(
-                h => client.OnMessage += h,
-                h => client.OnMessage -= h,
+            Assert.Raises<MessageEventArgs>(
+                h => client.Message += h,
+                h => client.Message -= h,
                 () =>
                 {
-                    client.OnConnected += (sender, e) => { pauseConnected.Set(); };
+                    client.Connected += (sender, e) => { pauseConnected.Set(); };
 
-                    client.OnMessage += (sender, e) =>
+                    client.Message += (sender, e) =>
                     {
                         pauseReadMessage.Set();
                         Assert.Equal("PONG :tmi.twitch.tv", e.Message);

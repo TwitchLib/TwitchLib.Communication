@@ -2,7 +2,7 @@
 
 namespace TwitchLib.Communication.Tests.Clients
 {
-    public class TcpClientTests : AClientTestsBase<TcpClient>
+    public class TcpClientTests : ClientTestsBase<TcpClient>
     {
         public TcpClientTests() { }
     }

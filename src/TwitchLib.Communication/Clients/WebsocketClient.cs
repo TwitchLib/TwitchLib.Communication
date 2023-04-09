@@ -14,10 +14,10 @@ using TwitchLib.Communication.Interfaces;
 namespace TwitchLib.Communication.Clients
 {
 
-    public class WebSocketClient : AClientBase<ClientWebSocket>
+    public class WebSocketClient : ClientBase<ClientWebSocket>
     {
         #region properties protected
-        protected override string URL { get; }
+        protected override string Url { get; }
         #endregion properties protected
 
 
@@ -27,20 +27,19 @@ namespace TwitchLib.Communication.Clients
 
 
         #region ctors
-        public WebSocketClient(IClientOptions options = null,
-                               ILogger logger = null) : base(options, logger)
+        public WebSocketClient(IClientOptions options = null, ILogger logger = null) : base(options, logger)
         {
             switch (Options.ClientType)
             {
                 case ClientType.Chat:
-                    URL = Options.UseSsl ? "wss://irc-ws.chat.twitch.tv:443" : "ws://irc-ws.chat.twitch.tv:80";
+                    Url = Options.UseSsl ? "wss://irc-ws.chat.twitch.tv:443" : "ws://irc-ws.chat.twitch.tv:80";
                     break;
                 case ClientType.PubSub:
-                    URL = Options.UseSsl ? "wss://pubsub-edge.twitch.tv:443" : "ws://pubsub-edge.twitch.tv:80";
+                    Url = Options.UseSsl ? "wss://pubsub-edge.twitch.tv:443" : "ws://pubsub-edge.twitch.tv:80";
                     break;
                 default:
                     Exception ex = new ArgumentOutOfRangeException(nameof(Options.ClientType));
-                    LOGGER?.LogExceptionAsError(GetType(), ex);
+                    Logger?.LogExceptionAsError(GetType(), ex);
                     throw ex;
             }
 
@@ -51,11 +50,11 @@ namespace TwitchLib.Communication.Clients
         #region methods internal
         internal override void ListenTaskAction()
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
             if (Client == null)
             {
                 Exception ex = new InvalidOperationException($"{nameof(Client)} was null!");
-                LOGGER?.LogExceptionAsError(GetType(), ex);
+                Logger?.LogExceptionAsError(GetType(), ex);
                 RaiseFatal(ex);
                 throw ex;
             }
@@ -74,14 +73,14 @@ namespace TwitchLib.Communication.Clients
                 }
                 catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))
                 {
-                    // occurs if the Tasks are canceled by the CancelationTokenSource.Token
-                    LOGGER?.LogExceptionAsInformation(GetType(), ex);
+                    // occurs if the Tasks are canceled by the CancellationTokenSource.Token
+                    Logger?.LogExceptionAsInformation(GetType(), ex);
                     break;
                 }
                 catch (Exception ex)
                 {
-                    LOGGER?.LogExceptionAsError(GetType(), ex);
-                    RaiseError(new OnErrorEventArgs(ex));
+                    Logger?.LogExceptionAsError(GetType(), ex);
+                    RaiseError(new ErrorEventArgs(ex));
                     break;
                 }
 
@@ -98,13 +97,13 @@ namespace TwitchLib.Communication.Clients
 
                     case WebSocketMessageType.Text:
                         message += Encoding.UTF8.GetString(buffer).TrimEnd('\0');
-                        RaiseMessage(new OnMessageEventArgs(message));
+                        RaiseMessage(new MessageEventArgs(message));
                         break;
                     case WebSocketMessageType.Binary:
                         break;
                     default:
                         Exception ex = new ArgumentOutOfRangeException();
-                        LOGGER?.LogExceptionAsError(GetType(), ex);
+                        Logger?.LogExceptionAsError(GetType(), ex);
                         throw ex;
                 }
                 // clear/reset message
@@ -117,7 +116,7 @@ namespace TwitchLib.Communication.Clients
         #region methods protected
         protected override void SpecificClientSend(string message)
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
 
             // this is not thread safe
             // this method should only be called from 'AClientBase.Send()'
@@ -131,7 +130,7 @@ namespace TwitchLib.Communication.Clients
             if (Client == null)
             {
                 Exception ex = new InvalidOperationException($"{nameof(Client)} was null!");
-                LOGGER?.LogExceptionAsError(GetType(), ex);
+                Logger?.LogExceptionAsError(GetType(), ex);
                 RaiseFatal(ex);
                 throw ex;
             }
@@ -144,11 +143,11 @@ namespace TwitchLib.Communication.Clients
         }
         protected override void SpecificClientConnect()
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
             if (Client == null)
             {
                 Exception ex = new InvalidOperationException($"{nameof(Client)} was null!");
-                LOGGER?.LogExceptionAsError(GetType(), ex);
+                Logger?.LogExceptionAsError(GetType(), ex);
                 RaiseFatal(ex);
                 throw ex;
             }
@@ -173,11 +172,11 @@ namespace TwitchLib.Communication.Clients
                 // https://stackoverflow.com/a/11191070
                 // https://stackoverflow.com/a/22078975
 
-                // avoid deletion of using decleration through code-cleanups/save-actions
+                // avoid deletion of using declaration through code-cleanups/save-actions
                 // by using the fully qualified name
                 using (CancellationTokenSource delayTaskCancellationTokenSource = new CancellationTokenSource())
                 {
-                    Task connectTask = Client.ConnectAsync(new Uri(URL),
+                    Task connectTask = Client.ConnectAsync(new Uri(Url),
                                                            Token);
                     Task delayTask = Task.Delay((int) TimeOutEstablishConnection.TotalMilliseconds,
                                                 delayTaskCancellationTokenSource.Token);
@@ -191,29 +190,29 @@ namespace TwitchLib.Communication.Clients
 #endif
                 if (!IsConnected)
                 {
-                    LOGGER?.TraceAction(GetType(), "Client couldnt establish connection");
+                    Logger?.TraceAction(GetType(), "Client couldn't establish connection");
                 }
                 // take care: the following closing brace belongs to 'try {'
             }
             catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))
             {
-                // occurs if the Tasks are canceled by the CancelationTokenSource.Token
-                LOGGER?.LogExceptionAsInformation(GetType(), ex);
+                // occurs if the Tasks are canceled by the CancellationTokenSource.Token
+                Logger?.LogExceptionAsInformation(GetType(), ex);
             }
             catch (Exception ex)
             {
-                LOGGER?.LogExceptionAsError(GetType(), ex);
+                Logger?.LogExceptionAsError(GetType(), ex);
             }
         }
         protected override ClientWebSocket NewClient()
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
             ClientWebSocket clientWebSocket = new ClientWebSocket();
             return clientWebSocket;
         }
         protected override void SpecificClientClose()
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
             Client?.Abort();
             Client?.Dispose();
         }

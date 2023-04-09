@@ -26,9 +26,6 @@ namespace TwitchLib.Communication.Models
         /// <param name="clientType">
         ///     <inheritdoc cref="ClientType"/>
         /// </param>
-        /// <param name="sendDelay">
-        ///     <inheritdoc cref="SendDelay"/>
-        /// </param>
         public ClientOptions(ReconnectionPolicy reconnectionPolicy = null,
                              bool useSsl = true,
                              uint disconnectWait = 1_500,

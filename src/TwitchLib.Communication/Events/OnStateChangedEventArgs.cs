@@ -2,7 +2,7 @@
 
 namespace TwitchLib.Communication.Events
 {
-    public class OnStateChangedEventArgs : EventArgs
+    public class StateChangedEventArgs : EventArgs
     {
         public bool IsConnected;
         public bool WasConnected;

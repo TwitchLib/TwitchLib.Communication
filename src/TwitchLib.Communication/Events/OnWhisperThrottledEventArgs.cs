@@ -2,7 +2,7 @@
 
 namespace TwitchLib.Communication.Events
 {
-    public class OnWhisperThrottledEventArgs : EventArgs
+    public class WhisperThrottledEventArgs : EventArgs
     {
         public string Message { get; set; }
         public int SentWhisperCount { get; set; }

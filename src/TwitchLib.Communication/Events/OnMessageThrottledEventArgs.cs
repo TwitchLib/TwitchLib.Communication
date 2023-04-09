@@ -2,7 +2,7 @@
 
 namespace TwitchLib.Communication.Events
 {
-    public class OnMessageThrottledEventArgs : EventArgs
+    public class MessageThrottledEventArgs : EventArgs
     {
         public string Message { get; set; }
         public int SentMessageCount { get; set; }

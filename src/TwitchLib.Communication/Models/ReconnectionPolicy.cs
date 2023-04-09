@@ -14,12 +14,12 @@ namespace TwitchLib.Communication.Models
     /// </summary>
     public class ReconnectionPolicy
     {
-        private readonly int reconnectStepInterval;
-        private readonly int? initMaxAttempts;
-        private int currentReconnectInterval;
-        private readonly int maxReconnectInterval;
-        private int? maxAttempts;
-        private int attemptsMade;
+        private readonly int _reconnectStepInterval;
+        private readonly int? _initMaxAttempts;
+        private int _currentReconnectInterval;
+        private readonly int _maxReconnectInterval;
+        private int? _maxAttempts;
+        private int _attemptsMade;
 
         public bool OmitReconnect { get; }
 
@@ -46,8 +46,8 @@ namespace TwitchLib.Communication.Models
         {
             if (!omitReconnect) throw new ArgumentOutOfRangeException(nameof(omitReconnect), "To use this Constructor, the parameters value has to be true!");
             OmitReconnect = true;
-            initMaxAttempts = 1;
-            maxAttempts = 1;
+            _initMaxAttempts = 1;
+            _maxAttempts = 1;
         }
 
         /// <summary>
@@ -68,12 +68,12 @@ namespace TwitchLib.Communication.Models
         /// </summary>
         public ReconnectionPolicy()
         {
-            reconnectStepInterval = 3_000;
-            currentReconnectInterval = reconnectStepInterval;
-            maxReconnectInterval = 30_000;
-            maxAttempts = null;
-            initMaxAttempts = null;
-            attemptsMade = 0;
+            _reconnectStepInterval = 3_000;
+            _currentReconnectInterval = _reconnectStepInterval;
+            _maxReconnectInterval = 30_000;
+            _maxAttempts = null;
+            _initMaxAttempts = null;
+            _attemptsMade = 0;
         }
 
         /// <summary>
@@ -106,14 +106,14 @@ namespace TwitchLib.Communication.Models
                                   int maxReconnectInterval,
                                   int maxAttempts)
         {
-            reconnectStepInterval = minReconnectInterval;
-            currentReconnectInterval = minReconnectInterval > maxReconnectInterval
+            _reconnectStepInterval = minReconnectInterval;
+            _currentReconnectInterval = minReconnectInterval > maxReconnectInterval
                 ? maxReconnectInterval
                 : minReconnectInterval;
-            this.maxReconnectInterval = maxReconnectInterval;
-            this.maxAttempts = maxAttempts;
-            initMaxAttempts = maxAttempts;
-            attemptsMade = 0;
+            this._maxReconnectInterval = maxReconnectInterval;
+            this._maxAttempts = maxAttempts;
+            _initMaxAttempts = maxAttempts;
+            _attemptsMade = 0;
         }
 
         /// <summary>
@@ -143,14 +143,14 @@ namespace TwitchLib.Communication.Models
         public ReconnectionPolicy(int minReconnectInterval,
                                   int maxReconnectInterval)
         {
-            reconnectStepInterval = minReconnectInterval;
-            currentReconnectInterval = minReconnectInterval > maxReconnectInterval
+            _reconnectStepInterval = minReconnectInterval;
+            _currentReconnectInterval = minReconnectInterval > maxReconnectInterval
                 ? maxReconnectInterval
                 : minReconnectInterval;
-            this.maxReconnectInterval = maxReconnectInterval;
-            maxAttempts = null;
-            initMaxAttempts = null;
-            attemptsMade = 0;
+            this._maxReconnectInterval = maxReconnectInterval;
+            _maxAttempts = null;
+            _initMaxAttempts = null;
+            _attemptsMade = 0;
         }
         /// <summary>
         ///     the <see cref="TwitchLib.Communication.Clients.TcpClient"/> or <see cref="TwitchLib.Communication.Clients.WebSocketClient"/>
@@ -162,12 +162,12 @@ namespace TwitchLib.Communication.Models
         /// </param>
         public ReconnectionPolicy(int reconnectInterval)
         {
-            reconnectStepInterval = reconnectInterval;
-            currentReconnectInterval = reconnectInterval;
-            maxReconnectInterval = reconnectInterval;
-            maxAttempts = null;
-            initMaxAttempts = null;
-            attemptsMade = 0;
+            _reconnectStepInterval = reconnectInterval;
+            _currentReconnectInterval = reconnectInterval;
+            _maxReconnectInterval = reconnectInterval;
+            _maxAttempts = null;
+            _initMaxAttempts = null;
+            _attemptsMade = 0;
         }
 
         /// <summary>
@@ -183,49 +183,49 @@ namespace TwitchLib.Communication.Models
         public ReconnectionPolicy(int reconnectInterval,
                                   int? maxAttempts)
         {
-            reconnectStepInterval = reconnectInterval;
-            currentReconnectInterval = reconnectInterval;
-            maxReconnectInterval = reconnectInterval;
-            this.maxAttempts = maxAttempts;
-            initMaxAttempts = maxAttempts;
-            attemptsMade = 0;
+            _reconnectStepInterval = reconnectInterval;
+            _currentReconnectInterval = reconnectInterval;
+            _maxReconnectInterval = reconnectInterval;
+            this._maxAttempts = maxAttempts;
+            _initMaxAttempts = maxAttempts;
+            _attemptsMade = 0;
         }
 
         internal void Reset(bool isReconnect)
         {
             if (isReconnect) return;
-            attemptsMade = 0;
-            currentReconnectInterval = reconnectStepInterval;
-            maxAttempts = initMaxAttempts;
+            _attemptsMade = 0;
+            _currentReconnectInterval = _reconnectStepInterval;
+            _maxAttempts = _initMaxAttempts;
         }
 
         internal void ProcessValues()
         {
-            attemptsMade++;
-            if (currentReconnectInterval < maxReconnectInterval)
+            _attemptsMade++;
+            if (_currentReconnectInterval < _maxReconnectInterval)
             {
-                currentReconnectInterval += reconnectStepInterval;
+                _currentReconnectInterval += _reconnectStepInterval;
             }
 
-            if (currentReconnectInterval > maxReconnectInterval)
+            if (_currentReconnectInterval > _maxReconnectInterval)
             {
-                currentReconnectInterval = maxReconnectInterval;
+                _currentReconnectInterval = _maxReconnectInterval;
             }
         }
 
         public int GetReconnectInterval()
         {
-            return currentReconnectInterval;
+            return _currentReconnectInterval;
         }
 
         public bool AreAttemptsComplete()
         {
-            if (maxAttempts == null)
+            if (_maxAttempts == null)
             {
                 return false;
             }
 
-            return attemptsMade == maxAttempts;
+            return _attemptsMade == _maxAttempts;
         }
     }
 }

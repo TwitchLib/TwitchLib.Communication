@@ -18,8 +18,8 @@ namespace TwitchLib.Communication.Services
     {
 
         #region properties private
-        private ILogger LOGGER { get; }
-        private AClientBase<T> Client { get; }
+        private ILogger Logger { get; }
+        private ClientBase<T> Client { get; }
         /// <summary>
         ///     <list>
         ///         <item>
@@ -37,10 +37,10 @@ namespace TwitchLib.Communication.Services
 
 
         #region ctors
-        internal ConnectionWatchDog(AClientBase<T> client,
+        internal ConnectionWatchDog(ClientBase<T> client,
                                     ILogger logger = null)
         {
-            LOGGER = logger;
+            Logger = logger;
             Client = client;
         }
         #endregion ctors
@@ -50,12 +50,12 @@ namespace TwitchLib.Communication.Services
 
         internal Task StartMonitorTask()
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
             // we dont want to start more than one WatchDog
             if (CancellationTokenSource != null)
             {
                 Exception ex = new InvalidOperationException("Monitor Task cant be started more than once!");
-                LOGGER?.LogExceptionAsError(GetType(), ex);
+                Logger?.LogExceptionAsError(GetType(), ex);
                 throw ex;
             }
             // this should be the only place where a new instance of CancellationTokenSource is set
@@ -63,7 +63,7 @@ namespace TwitchLib.Communication.Services
             if (Token == null)
             {
                 Exception ex = new InvalidOperationException($"{nameof(Token)} was null!");
-                LOGGER?.LogExceptionAsError(GetType(), ex);
+                Logger?.LogExceptionAsError(GetType(), ex);
                 Client.RaiseFatal(ex);
                 throw ex;
             }
@@ -72,7 +72,7 @@ namespace TwitchLib.Communication.Services
 
         internal void Stop()
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
             CancellationTokenSource?.Cancel();
             // give MonitorTaskAction a chance to catch cancellation
             // otherwise it may result in an Exception
@@ -87,7 +87,7 @@ namespace TwitchLib.Communication.Services
         #region methods private
         private void MonitorTaskAction()
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
             try
             {
                 while (Token != null && !Token.IsCancellationRequested)
@@ -97,15 +97,15 @@ namespace TwitchLib.Communication.Services
                     // cause ABaseClient.Open() starts networkservices after a connection could be established
                     if (!Client.IsConnected)
                     {
-                        LOGGER?.TraceAction(GetType(), "Client isnt connected anymore");
+                        Logger?.TraceAction(GetType(), "Client isnt connected anymore");
                         // no call to close needed,
                         // ReconnectInternal() calls the correct Close-Method within the Client
                         // ReconnectInternal() makes attempts to reconnect according to the ReconnectionPolicy within the IClientOptions
-                        LOGGER?.TraceAction(GetType(), "Try to reconnect");
+                        Logger?.TraceAction(GetType(), "Try to reconnect");
                         bool connected = Client.ReconnectInternal();
                         if (!connected)
                         {
-                            LOGGER?.TraceAction(GetType(), "Client couldnt reconnect");
+                            Logger?.TraceAction(GetType(), "Client couldnt reconnect");
                             // if the ReconnectionPolicy is set up to be finite
                             // and no connection could be established
                             // a call to Client.Close() is made
@@ -113,7 +113,7 @@ namespace TwitchLib.Communication.Services
                             Client.Close();
                             break;
                         }
-                        LOGGER?.TraceAction(GetType(), "Client reconnected");
+                        Logger?.TraceAction(GetType(), "Client reconnected");
                     }
                     Task.Delay(MonitorTaskDelayInMilliseconds).GetAwaiter().GetResult();
                 }
@@ -121,12 +121,12 @@ namespace TwitchLib.Communication.Services
             catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))
             {
                 // occurs if the Tasks are canceled by the CancelationTokenSource.Token
-                LOGGER?.LogExceptionAsInformation(GetType(), ex);
+                Logger?.LogExceptionAsInformation(GetType(), ex);
             }
             catch (Exception ex)
             {
-                LOGGER?.LogExceptionAsError(GetType(), ex);
-                Client.RaiseError(new OnErrorEventArgs(ex));
+                Logger?.LogExceptionAsError(GetType(), ex);
+                Client.RaiseError(new ErrorEventArgs(ex));
                 Client.RaiseFatal();
 
                 // to ensure CancellationTokenSource is set to null again

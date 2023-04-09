@@ -18,7 +18,7 @@ namespace TwitchLib.Communication.Extensions
             // because of the code-formatting, 2 line is subtracted from the callerLineNumber
             // cant be done inline!
             callerLineNumber -= 2;
-            logger?.LogTrace("{FullName}.{callerMemberName} at line {callerLineNumber} is called",
+            logger?.LogTrace("{FullName}.{CallerMemberName} at line {CallerLineNumber} is called",
                              type.FullName, callerMemberName, callerLineNumber);
         }
         public static void LogExceptionAsError(this ILogger logger,
@@ -28,7 +28,7 @@ namespace TwitchLib.Communication.Extensions
                                                [CallerLineNumber] int callerLineNumber = 0)
         {
             logger?.LogError(exception,
-                             "Exception in {FullName}.{callerMemberName} at line {callerLineNumber}:",
+                             "Exception in {FullName}.{CallerMemberName} at line {CallerLineNumber}:",
                              type.FullName, callerMemberName, callerLineNumber);
         }
         public static void LogExceptionAsInformation(this ILogger logger,
@@ -38,7 +38,7 @@ namespace TwitchLib.Communication.Extensions
                                                      [CallerLineNumber] int callerLineNumber = 0)
         {
             logger?.LogInformation(exception,
-                                   "Exception in {FullName}.{callerMemberName} at line {callerLineNumber}:",
+                                   "Exception in {FullName}.{CallerMemberName} at line {CallerLineNumber}:",
                                    type.FullName, callerMemberName, callerLineNumber);
         }
         public static void TraceAction(this ILogger logger,
@@ -47,7 +47,7 @@ namespace TwitchLib.Communication.Extensions
                                        [CallerMemberName] string callerMemberName = "",
                                        [CallerLineNumber] int callerLineNumber = 0)
         {
-            logger?.LogTrace("{FullName}.{callerMemberName} at line {callerLineNumber}: {action}",
+            logger?.LogTrace("{FullName}.{CallerMemberName} at line {CallerLineNumber}: {Cction}",
                              type.FullName, callerMemberName, callerLineNumber, action);
         }
     }

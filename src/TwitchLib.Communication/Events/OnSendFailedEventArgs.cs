@@ -2,11 +2,11 @@
 
 namespace TwitchLib.Communication.Events
 {
-    public class OnSendFailedEventArgs : EventArgs
+    public class SendFailedEventArgs : EventArgs
     {
         public string Data { get; }
         public Exception Exception { get; }
-        public OnSendFailedEventArgs(string data, Exception exception)
+        public SendFailedEventArgs(string data, Exception exception)
         {
             Data = data;
             Exception = exception;

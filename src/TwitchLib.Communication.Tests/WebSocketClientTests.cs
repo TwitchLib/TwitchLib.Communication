@@ -29,7 +29,7 @@ namespace TwitchLib.Communication.Tests
         [Fact]
         public void Client_Raises_OnDisconnected_EventArgs()
         {
-            var client = new WebSocketClient(new ClientOptions() {DisconnectWait = 5000});
+            var client = new WebSocketClient(new ClientOptions(disconnectWait: 5000));
             var pauseDisconnected = new ManualResetEvent(false);
 
             Assert.Raises<OnDisconnectedEventArgs>(
@@ -54,7 +54,7 @@ namespace TwitchLib.Communication.Tests
         [Fact]
         public void Client_Raises_OnReconnected_EventArgs()
         {
-            var client = new WebSocketClient(new ClientOptions(){ReconnectionPolicy = null});
+            var client = new WebSocketClient(new ClientOptions());
             var pauseReconnected = new ManualResetEvent(false);
 
             Assert.Raises<OnReconnectedEventArgs>(

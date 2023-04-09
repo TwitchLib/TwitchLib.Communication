@@ -53,7 +53,7 @@ namespace TwitchLib.Communication.Clients
         public event EventHandler<OnFatalErrorEventArgs>? OnFatality;
         public event EventHandler<OnMessageEventArgs>? OnMessage;
         public event EventHandler<OnSendFailedEventArgs>? OnSendFailed;
-        public event EventHandler<OnConnectedEventArgs>? OnReconnected;
+        public event EventHandler<OnReconnectedEventArgs>? OnReconnected;
         #endregion events public
 
 
@@ -144,7 +144,7 @@ namespace TwitchLib.Communication.Clients
             {
                 return;
             }
-            OnReconnected?.Invoke(this, new OnConnectedEventArgs());
+            OnReconnected?.Invoke(this, new OnReconnectedEventArgs());
         }
         /// <summary>
         ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested

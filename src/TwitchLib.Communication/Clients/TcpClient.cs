@@ -20,7 +20,7 @@ namespace TwitchLib.Communication.Clients
 
 
         #region properties private
-        private int Port => Options.UseSsl ? 443 : 80;
+        private int Port => Options.UseSsl ? 6697 : 6667;
         private StreamReader? Reader { get; set; }
         private StreamWriter? Writer { get; set; }
         #endregion properties private

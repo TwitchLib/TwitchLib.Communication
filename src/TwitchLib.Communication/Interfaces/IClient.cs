@@ -56,7 +56,7 @@ namespace TwitchLib.Communication.Interfaces
         /// <summary>
         ///     Fires when the client reconnects automatically
         /// </summary>
-        event EventHandler<OnConnectedEventArgs>? OnReconnected;
+        event EventHandler<OnReconnectedEventArgs>? OnReconnected;
         #endregion events
 
 

@@ -30,9 +30,9 @@ namespace TwitchLib.Communication.Services
 
 
         #region properties private
-        private ILogger LOGGER { get; }
+        private ILogger Logger { get; }
         private CancellationToken Token => Client.Token;
-        private AClientBase<T> Client { get; }
+        private ClientBase<T> Client { get; }
         #endregion properties private
 
 
@@ -42,10 +42,10 @@ namespace TwitchLib.Communication.Services
 
 
         #region ctors
-        internal NetworkServices(AClientBase<T> client,
+        internal NetworkServices(ClientBase<T> client,
                                  ILogger logger = null)
         {
-            LOGGER = logger;
+            Logger = logger;
             Client = client;
             ConnectionWatchDog = new ConnectionWatchDog<T>(Client, logger);
         }
@@ -55,7 +55,7 @@ namespace TwitchLib.Communication.Services
         #region methods internal
         internal void Start()
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
             if (MonitorTask == null || !TaskHelper.IsTaskRunning(MonitorTask))
             {
                 // this task is probably still running
@@ -73,7 +73,7 @@ namespace TwitchLib.Communication.Services
 
         internal void Stop()
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
             ConnectionWatchDog.Stop();
         }
         #endregion methods private

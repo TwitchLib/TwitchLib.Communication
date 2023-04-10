@@ -12,10 +12,10 @@ using TwitchLib.Communication.Interfaces;
 namespace TwitchLib.Communication.Clients
 {
 
-    public class TcpClient : AClientBase<System.Net.Sockets.TcpClient>
+    public class TcpClient : ClientBase<System.Net.Sockets.TcpClient>
     {
         #region properties protected
-        protected override string URL => "irc.chat.twitch.tv";
+        protected override string Url => "irc.chat.twitch.tv";
         #endregion properties protected
 
 
@@ -41,11 +41,11 @@ namespace TwitchLib.Communication.Clients
         #region methods internal
         internal override void ListenTaskAction()
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
             if (Reader == null)
             {
                 Exception ex = new InvalidOperationException($"{nameof(Reader)} was null!");
-                LOGGER?.LogExceptionAsError(GetType(), ex);
+                Logger?.LogExceptionAsError(GetType(), ex);
                 RaiseFatal(ex);
                 throw ex;
             }
@@ -64,11 +64,11 @@ namespace TwitchLib.Communication.Clients
                 catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))
                 {
                     // occurs if the Tasks are canceled by the CancelationTokenSource.Token
-                    LOGGER?.LogExceptionAsInformation(GetType(), ex);
+                    Logger?.LogExceptionAsInformation(GetType(), ex);
                 }
                 catch (Exception ex)
                 {
-                    LOGGER?.LogExceptionAsError(GetType(), ex);
+                    Logger?.LogExceptionAsError(GetType(), ex);
                     RaiseError(new OnErrorEventArgs { Exception = ex });
                     break;
                 }
@@ -80,7 +80,7 @@ namespace TwitchLib.Communication.Clients
         #region methods protected
         protected override void SpecificClientSend(string message)
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
 
             // this is not thread safe
             // this method should only be called from 'AClientBase.Send()'
@@ -89,7 +89,7 @@ namespace TwitchLib.Communication.Clients
             if (Writer == null)
             {
                 Exception ex = new InvalidOperationException($"{nameof(Writer)} was null!");
-                LOGGER?.LogExceptionAsError(GetType(), ex);
+                Logger?.LogExceptionAsError(GetType(), ex);
                 RaiseFatal(ex);
                 throw ex;
             }
@@ -98,11 +98,11 @@ namespace TwitchLib.Communication.Clients
         }
         protected override void SpecificClientConnect()
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
             if (Client == null)
             {
                 Exception ex = new InvalidOperationException($"{nameof(Client)} was null!");
-                LOGGER?.LogExceptionAsError(GetType(), ex);
+                Logger?.LogExceptionAsError(GetType(), ex);
                 throw ex;
             }
             try
@@ -131,7 +131,7 @@ namespace TwitchLib.Communication.Clients
                 // by using the fully qualified name
                 using (System.Threading.CancellationTokenSource delayTaskCancellationTokenSource = new System.Threading.CancellationTokenSource())
                 {
-                    Task connectTask = Client.ConnectAsync(URL, Port);
+                    Task connectTask = Client.ConnectAsync(Url, Port);
                     Task delayTask = Task.Delay((int) TimeOutEstablishConnection.TotalMilliseconds,
                                                 delayTaskCancellationTokenSource.Token);
                     Task<Task> task = Task.WhenAny(connectTask, delayTask);
@@ -142,14 +142,14 @@ namespace TwitchLib.Communication.Clients
 #endif
                 if (!Client.Connected)
                 {
-                    LOGGER?.TraceAction(GetType(), "Client couldnt establish connection");
+                    Logger?.TraceAction(GetType(), "Client couldnt establish connection");
                     return;
                 }
-                LOGGER?.TraceAction(GetType(), "Client established connection successfully");
+                Logger?.TraceAction(GetType(), "Client established connection successfully");
                 if (Options.UseSsl)
                 {
                     SslStream ssl = new SslStream(Client.GetStream(), false);
-                    ssl.AuthenticateAsClient(URL);
+                    ssl.AuthenticateAsClient(Url);
                     Reader = new StreamReader(ssl);
                     Writer = new StreamWriter(ssl);
                 }
@@ -162,16 +162,16 @@ namespace TwitchLib.Communication.Clients
             catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))
             {
                 // occurs if the Tasks are canceled by the CancelationTokenSource.Token
-                LOGGER?.LogExceptionAsInformation(GetType(), ex);
+                Logger?.LogExceptionAsInformation(GetType(), ex);
             }
             catch (Exception ex)
             {
-                LOGGER?.LogExceptionAsError(GetType(), ex);
+                Logger?.LogExceptionAsError(GetType(), ex);
             }
         }
         protected override System.Net.Sockets.TcpClient NewClient()
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
             System.Net.Sockets.TcpClient tcpClient = new System.Net.Sockets.TcpClient
             {
                 // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient.lingerstate?view=netstandard-2.0#remarks
@@ -181,7 +181,7 @@ namespace TwitchLib.Communication.Clients
         }
         protected override void SpecificClientClose()
         {
-            LOGGER?.TraceMethodCall(GetType());
+            Logger?.TraceMethodCall(GetType());
             Reader?.Close();
             Reader?.Dispose();
             Writer?.Close();

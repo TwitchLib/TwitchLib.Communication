@@ -7,23 +7,12 @@ namespace TwitchLib.Communication.Helpers
         internal static bool IsTaskRunning(Task task)
         {
             return task != null
-                && !task.IsFaulted
-                && !task.IsCompleted
+                   && !task.IsFaulted
+                   && !task.IsCompleted
 #if NET
             && !task.IsCompletedSuccessfully
 #endif
-                && !task.IsCanceled;
-
-
-            //if (task == null) return false;
-            //switch (task.Status)
-            //{
-            //    case TaskStatus.RanToCompletion:
-            //    case TaskStatus.Faulted:
-            //    case TaskStatus.Canceled:
-            //        return false;
-            //}
-            //return true;
+                   && !task.IsCanceled;
         }
     }
 }

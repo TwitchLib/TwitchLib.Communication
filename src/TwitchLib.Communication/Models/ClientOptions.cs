@@ -3,13 +3,13 @@ using TwitchLib.Communication.Interfaces;
 
 namespace TwitchLib.Communication.Models
 {
-
     public class ClientOptions : IClientOptions
     {
         public ReconnectionPolicy ReconnectionPolicy { get; }
         public bool UseSsl { get; }
         public uint DisconnectWait { get; }
         public ClientType ClientType { get; }
+
         /// <summary>
         /// </summary>
         /// <param name="reconnectionPolicy">
@@ -26,15 +26,12 @@ namespace TwitchLib.Communication.Models
         /// <param name="clientType">
         ///     <inheritdoc cref="ClientType"/>
         /// </param>
-        /// <param name="sendDelay">
-        ///     <inheritdoc cref="SendDelay"/>
-        /// </param>
-        public ClientOptions(ReconnectionPolicy reconnectionPolicy = null,
-                             bool useSsl = true,
-                             uint disconnectWait = 1_500,
-                             ClientType clientType = ClientType.Chat)
+        public ClientOptions(
+            ReconnectionPolicy reconnectionPolicy = null,
+            bool useSsl = true,
+            uint disconnectWait = 1_500,
+            ClientType clientType = ClientType.Chat)
         {
-
             ReconnectionPolicy = reconnectionPolicy ?? new ReconnectionPolicy(3_000, maxAttempts: 10);
             UseSsl = useSsl;
             DisconnectWait = disconnectWait;

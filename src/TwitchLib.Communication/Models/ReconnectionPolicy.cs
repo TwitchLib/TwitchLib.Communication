@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 
 namespace TwitchLib.Communication.Models
 {
@@ -44,7 +43,9 @@ namespace TwitchLib.Communication.Models
         /// </exception>
         public ReconnectionPolicy(bool omitReconnect)
         {
-            if (!omitReconnect) throw new ArgumentOutOfRangeException(nameof(omitReconnect), "To use this Constructor, the parameters value has to be true!");
+            if (!omitReconnect)
+                throw new ArgumentOutOfRangeException(nameof(omitReconnect),
+                    "To use this Constructor, the parameters value has to be true!");
             OmitReconnect = true;
             _initMaxAttempts = 1;
             _maxAttempts = 1;
@@ -102,16 +103,17 @@ namespace TwitchLib.Communication.Models
         /// <param name="maxAttempts">
         ///     <see langword="null"/> means <b>infinite</b>; it never stops to try to reconnect
         /// </param>
-        public ReconnectionPolicy(int minReconnectInterval,
-                                  int maxReconnectInterval,
-                                  int maxAttempts)
+        public ReconnectionPolicy(
+            int minReconnectInterval,
+            int maxReconnectInterval,
+            int maxAttempts)
         {
             _reconnectStepInterval = minReconnectInterval;
             _currentReconnectInterval = minReconnectInterval > maxReconnectInterval
                 ? maxReconnectInterval
                 : minReconnectInterval;
-            this._maxReconnectInterval = maxReconnectInterval;
-            this._maxAttempts = maxAttempts;
+            _maxReconnectInterval = maxReconnectInterval;
+            _maxAttempts = maxAttempts;
             _initMaxAttempts = maxAttempts;
             _attemptsMade = 0;
         }
@@ -132,7 +134,7 @@ namespace TwitchLib.Communication.Models
         ///     <br></br>
         ///     <paramref name="maxReconnectInterval"/> = 30_000
         ///     <br></br>
-        ///     try to connect -> couldnt connect -> wait 3_000 milliseconds -> try to connect -> couldnt connect -> wait 6_000 milliseconds -> and so on
+        ///     try to connect -> couldn't connect -> wait 3_000 milliseconds -> try to connect -> couldn't connect -> wait 6_000 milliseconds -> and so on
         /// </summary>
         /// <param name="minReconnectInterval">
         ///     minimum interval in milliseconds
@@ -140,18 +142,20 @@ namespace TwitchLib.Communication.Models
         /// <param name="maxReconnectInterval">
         ///     maximum interval in milliseconds
         /// </param>
-        public ReconnectionPolicy(int minReconnectInterval,
-                                  int maxReconnectInterval)
+        public ReconnectionPolicy(
+            int minReconnectInterval,
+            int maxReconnectInterval)
         {
             _reconnectStepInterval = minReconnectInterval;
             _currentReconnectInterval = minReconnectInterval > maxReconnectInterval
                 ? maxReconnectInterval
                 : minReconnectInterval;
-            this._maxReconnectInterval = maxReconnectInterval;
+            _maxReconnectInterval = maxReconnectInterval;
             _maxAttempts = null;
             _initMaxAttempts = null;
             _attemptsMade = 0;
         }
+
         /// <summary>
         ///     the <see cref="TwitchLib.Communication.Clients.TcpClient"/> or <see cref="TwitchLib.Communication.Clients.WebSocketClient"/>
         ///     <b>infinitely</b>
@@ -181,12 +185,12 @@ namespace TwitchLib.Communication.Models
         ///     <see langword="null"/> means <b>infinite</b>; it never stops to try to reconnect
         /// </param>
         public ReconnectionPolicy(int reconnectInterval,
-                                  int? maxAttempts)
+            int? maxAttempts)
         {
             _reconnectStepInterval = reconnectInterval;
             _currentReconnectInterval = reconnectInterval;
             _maxReconnectInterval = reconnectInterval;
-            this._maxAttempts = maxAttempts;
+            _maxAttempts = maxAttempts;
             _initMaxAttempts = maxAttempts;
             _attemptsMade = 0;
         }

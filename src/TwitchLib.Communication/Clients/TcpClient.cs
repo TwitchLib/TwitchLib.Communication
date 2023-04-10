@@ -2,43 +2,28 @@
 using System.IO;
 using System.Net.Security;
 using System.Threading.Tasks;
-
 using Microsoft.Extensions.Logging;
-
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Extensions;
 using TwitchLib.Communication.Interfaces;
 
 namespace TwitchLib.Communication.Clients
 {
-
     public class TcpClient : ClientBase<System.Net.Sockets.TcpClient>
     {
-        #region properties protected
         protected override string Url => "irc.chat.twitch.tv";
-        #endregion properties protected
 
-
-        #region properties private
         private int Port => Options.UseSsl ? 443 : 80;
         private StreamReader Reader { get; set; }
         private StreamWriter Writer { get; set; }
-        #endregion properties private
 
-
-        #region properties public
         public override bool IsConnected => Client?.Connected ?? false;
-        #endregion properties public
-
-
-        #region ctors
 
         public TcpClient(IClientOptions options = null,
-                         ILogger logger = null) : base(options, logger) { }
-        #endregion ctors
+            ILogger logger = null) : base(options, logger)
+        {
+        }
 
-
-        #region methods internal
         internal override void ListenTaskAction()
         {
             Logger?.TraceMethodCall(GetType());
@@ -49,6 +34,7 @@ namespace TwitchLib.Communication.Clients
                 RaiseFatal(ex);
                 throw ex;
             }
+
             while (IsConnected)
             {
                 try
@@ -61,7 +47,8 @@ namespace TwitchLib.Communication.Clients
 
                     RaiseMessage(new OnMessageEventArgs { Message = input });
                 }
-                catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))
+                catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
+                                           ex.GetType() == typeof(OperationCanceledException))
                 {
                     // occurs if the Tasks are canceled by the CancelationTokenSource.Token
                     Logger?.LogExceptionAsInformation(GetType(), ex);
@@ -74,16 +61,13 @@ namespace TwitchLib.Communication.Clients
                 }
             }
         }
-        #endregion methods internal
 
-
-        #region methods protected
         protected override void SpecificClientSend(string message)
         {
             Logger?.TraceMethodCall(GetType());
 
             // this is not thread safe
-            // this method should only be called from 'AClientBase.Send()'
+            // this method should only be called from 'ClientBase.Send()'
             // where its call gets synchronized/locked
             // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.networkstream?view=netstandard-2.0#remarks
             if (Writer == null)
@@ -93,9 +77,11 @@ namespace TwitchLib.Communication.Clients
                 RaiseFatal(ex);
                 throw ex;
             }
+
             Writer.WriteLine(message);
             Writer.Flush();
         }
+
         protected override void SpecificClientConnect()
         {
             Logger?.TraceMethodCall(GetType());
@@ -105,6 +91,7 @@ namespace TwitchLib.Communication.Clients
                 Logger?.LogExceptionAsError(GetType(), ex);
                 throw ex;
             }
+
             try
             {
                 // https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/async-scenarios
@@ -129,11 +116,12 @@ namespace TwitchLib.Communication.Clients
 
                 // avoid deletion of using-decleration through code-cleanups/save-actions
                 // by using the fully qualified name
-                using (System.Threading.CancellationTokenSource delayTaskCancellationTokenSource = new System.Threading.CancellationTokenSource())
+                using (System.Threading.CancellationTokenSource delayTaskCancellationTokenSource =
+                       new System.Threading.CancellationTokenSource())
                 {
                     Task connectTask = Client.ConnectAsync(Url, Port);
-                    Task delayTask = Task.Delay((int) TimeOutEstablishConnection.TotalMilliseconds,
-                                                delayTaskCancellationTokenSource.Token);
+                    Task delayTask = Task.Delay((int)TimeOutEstablishConnection.TotalMilliseconds,
+                        delayTaskCancellationTokenSource.Token);
                     Task<Task> task = Task.WhenAny(connectTask, delayTask);
                     // though 'theTaskThatCompletedFirst' is unused, just to be precise...
                     Task theTaskThatCompletedFirst = task.GetAwaiter().GetResult();
@@ -145,6 +133,7 @@ namespace TwitchLib.Communication.Clients
                     Logger?.TraceAction(GetType(), "Client couldnt establish connection");
                     return;
                 }
+
                 Logger?.TraceAction(GetType(), "Client established connection successfully");
                 if (Options.UseSsl)
                 {
@@ -159,7 +148,8 @@ namespace TwitchLib.Communication.Clients
                     Writer = new StreamWriter(Client.GetStream());
                 }
             }
-            catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))
+            catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
+                                       ex.GetType() == typeof(OperationCanceledException))
             {
                 // occurs if the Tasks are canceled by the CancelationTokenSource.Token
                 Logger?.LogExceptionAsInformation(GetType(), ex);
@@ -169,6 +159,7 @@ namespace TwitchLib.Communication.Clients
                 Logger?.LogExceptionAsError(GetType(), ex);
             }
         }
+
         protected override System.Net.Sockets.TcpClient NewClient()
         {
             Logger?.TraceMethodCall(GetType());
@@ -179,6 +170,7 @@ namespace TwitchLib.Communication.Clients
             };
             return tcpClient;
         }
+
         protected override void SpecificClientClose()
         {
             Logger?.TraceMethodCall(GetType());
@@ -189,6 +181,5 @@ namespace TwitchLib.Communication.Clients
             Client?.Close();
             Client?.Dispose();
         }
-        #endregion methods protected
     }
 }

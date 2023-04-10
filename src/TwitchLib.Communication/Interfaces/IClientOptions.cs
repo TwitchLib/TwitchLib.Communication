@@ -3,7 +3,6 @@ using TwitchLib.Communication.Models;
 
 namespace TwitchLib.Communication.Interfaces
 {
-
     public interface IClientOptions
     {
         /// <summary>

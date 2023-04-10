@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Microsoft.Extensions.Logging;
-
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Extensions;
 using TwitchLib.Communication.Interfaces;
@@ -51,6 +49,7 @@ namespace TwitchLib.Communication.Clients
         ///     The underlying <see cref="T"/> client.
         /// </summary>
         public T Client { get; private set; }
+
         public abstract bool IsConnected { get; }
         public IClientOptions Options { get; }
 
@@ -59,10 +58,11 @@ namespace TwitchLib.Communication.Clients
         ///     whenever a call to <see cref="CancellationTokenSource.Cancel()"/> is made
         /// </summary>
         private CancellationTokenSource CancellationTokenSource { get; set; }
+
         private NetworkServices<T> NetworkServices { get; }
 
         internal ClientBase(IClientOptions options = null,
-                             ILogger logger = null)
+            ILogger logger = null)
         {
             Logger = logger;
             CancellationTokenSource = new CancellationTokenSource();
@@ -70,9 +70,8 @@ namespace TwitchLib.Communication.Clients
             NetworkServices = new NetworkServices<T>(this, logger);
         }
 
-        #region invoker/raiser internal
         /// <summary>
-        ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
+        ///     Wont raise the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
         internal void RaiseSendFailed(OnSendFailedEventArgs eventArgs)
         {
@@ -81,6 +80,7 @@ namespace TwitchLib.Communication.Clients
             {
                 return;
             }
+
             OnSendFailed?.Invoke(this, eventArgs);
         }
 
@@ -94,8 +94,10 @@ namespace TwitchLib.Communication.Clients
             {
                 return;
             }
+
             OnError?.Invoke(this, eventArgs);
         }
+
         /// <summary>
         ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
@@ -106,8 +108,10 @@ namespace TwitchLib.Communication.Clients
             {
                 return;
             }
+
             OnReconnected?.Invoke(this, new OnConnectedEventArgs());
         }
+
         /// <summary>
         ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
@@ -118,9 +122,10 @@ namespace TwitchLib.Communication.Clients
             {
                 return;
             }
+
             OnMessage?.Invoke(this, eventArgs);
         }
-        
+
         /// <summary>
         ///     wont rais the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
@@ -131,28 +136,28 @@ namespace TwitchLib.Communication.Clients
             {
                 return;
             }
+
             OnFatalErrorEventArgs onFatalErrorEventArgs = new OnFatalErrorEventArgs("Fatal network error.");
             if (e != null)
             {
                 onFatalErrorEventArgs = new OnFatalErrorEventArgs(e);
             }
+
             OnFatality?.Invoke(this, onFatalErrorEventArgs);
         }
-        
+
         internal void RaiseDisconnected()
         {
             Logger?.TraceMethodCall(GetType());
             OnDisconnected?.Invoke(this, new OnDisconnectedEventArgs());
         }
-        
+
         internal void RaiseConnected()
         {
             Logger?.TraceMethodCall(GetType());
             OnConnected?.Invoke(this, new OnConnectedEventArgs());
         }
-        #endregion invoker/raiser internal
 
-        #region methods public
         public bool Send(string message)
         {
             Logger?.TraceMethodCall(GetType());
@@ -176,6 +181,7 @@ namespace TwitchLib.Communication.Clients
             Logger?.TraceMethodCall(GetType());
             return OpenPrivate(false);
         }
+
         public void Close()
         {
             Logger?.TraceMethodCall(GetType());
@@ -185,6 +191,7 @@ namespace TwitchLib.Communication.Clients
             // ClosePrivate() also handles IClientOptions.DisconnectWait
             ClosePrivate();
         }
+
         /// <summary>
         ///     <inheritdoc cref="Close"/>
         /// </summary>
@@ -203,14 +210,12 @@ namespace TwitchLib.Communication.Clients
             {
                 Close();
             }
+
             // interface IClient doesnt declare a return value for Reconnect()
             // so we can suppress IDE0058 of ReconnectInternal()
             return ReconnectInternal();
         }
-        #endregion methods public
 
-
-        #region methods private
         private bool OpenPrivate(bool isReconnect)
         {
             Logger?.TraceMethodCall(GetType());
@@ -220,10 +225,12 @@ namespace TwitchLib.Communication.Clients
                 {
                     return false;
                 }
+
                 if (IsConnected)
                 {
                     return true;
                 }
+
                 // at this time,
                 // the specific 'System.Net.WebSockets.ClientWebSocket'
                 // or 'System.Net.Sockets.TcpClient'
@@ -245,12 +252,14 @@ namespace TwitchLib.Communication.Clients
                     Options.ReconnectionPolicy.ProcessValues();
                     first = false;
                 }
+
                 if (!IsConnected)
                 {
                     Logger?.TraceAction(GetType(), "Client couldnt establish a connection");
                     RaiseFatal();
                     return false;
                 }
+
                 Logger?.TraceAction(GetType(), "Client established a connection");
                 NetworkServices.Start();
                 if (!isReconnect)
@@ -268,6 +277,7 @@ namespace TwitchLib.Communication.Clients
                 return false;
             }
         }
+
         /// <summary>
         ///     stops <see cref="NetworkServices.ListenTask"/>
         ///     by calling <see cref="CancellationTokenSource.Cancel()"/>
@@ -288,7 +298,8 @@ namespace TwitchLib.Communication.Clients
             // this call to Cancel stops
             // NetworkServices.ListenTask
             CancellationTokenSource.Cancel();
-            Logger?.TraceAction(GetType(), $"{nameof(CancellationTokenSource)}.{nameof(CancellationTokenSource.Cancel)} is called");
+            Logger?.TraceAction(GetType(),
+                $"{nameof(CancellationTokenSource)}.{nameof(CancellationTokenSource.Cancel)} is called");
             SpecificClientClose();
             RaiseDisconnected();
             // only here and in the ctor.
@@ -297,10 +308,7 @@ namespace TwitchLib.Communication.Clients
             CancellationTokenSource = new CancellationTokenSource();
             Task.Delay(TimeSpan.FromMilliseconds(Options.DisconnectWait)).GetAwaiter().GetResult();
         }
-        #endregion methods private
 
-
-        #region methods protected
         /// <summary>
         ///     specific client send method
         /// </summary>
@@ -313,6 +321,7 @@ namespace TwitchLib.Communication.Clients
         ///     <see langword="false"/> otherwise
         /// </returns>
         protected abstract void SpecificClientSend(string message);
+
         /// <summary>
         ///     to instantiate the underlying
         ///     <list>
@@ -326,6 +335,7 @@ namespace TwitchLib.Communication.Clients
         ///     </list>
         /// </summary>
         protected abstract T NewClient();
+
         /// <summary>
         ///     one of the following specific methods
         ///     <list>
@@ -354,6 +364,7 @@ namespace TwitchLib.Communication.Clients
         ///     </list>
         /// </summary>
         protected abstract void SpecificClientConnect();
+
         /// <summary>
         ///     this method is needed,
         ///     cause closing/aborting the clients
@@ -380,10 +391,7 @@ namespace TwitchLib.Communication.Clients
             // dont do it anywhere else
             Client = NewClient();
         }
-        #endregion methods protected
 
-
-        #region methods internal
         /// <summary>
         ///     to issue a reconnect
         ///     <br></br>
@@ -411,13 +419,14 @@ namespace TwitchLib.Communication.Clients
             {
                 RaiseReconnected();
             }
+
             return reconnected;
         }
+
         /// <summary>
         ///     just the Action that listens for new Messages
         ///     the corresponding <see cref="Task"/> is held by <see cref="Services.NetworkServices"/>
         /// </summary>
         internal abstract void ListenTaskAction();
-        #endregion methods internal
     }
 }

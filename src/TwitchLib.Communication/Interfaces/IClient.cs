@@ -1,15 +1,10 @@
 ﻿using System;
-
 using TwitchLib.Communication.Events;
 
 namespace TwitchLib.Communication.Interfaces
 {
-
     public interface IClient : IDisposable
     {
-
-        #region properties
-
         /// <summary>
         ///     The current state of the connection.
         /// </summary>
@@ -19,10 +14,7 @@ namespace TwitchLib.Communication.Interfaces
         ///     Client Configuration Options
         /// </summary>
         IClientOptions Options { get; }
-        #endregion properties
 
-
-        #region events
         /// <summary>
         ///     Fires when the Client has connected
         /// </summary>
@@ -57,10 +49,6 @@ namespace TwitchLib.Communication.Interfaces
         ///     Fires when the client reconnects automatically
         /// </summary>
         event EventHandler<OnConnectedEventArgs> OnReconnected;
-        #endregion events
-
-
-        #region methods
 
         /// <summary>
         ///     tries to connect to twitch according to <see cref="IClientOptions.ReconnectionPolicy"/>!
@@ -69,6 +57,7 @@ namespace TwitchLib.Communication.Interfaces
         ///     <see langword="true"/> if a connection could be established, <see langword="false"/> otherwise
         /// </returns>
         bool Open();
+
         /// <summary>
         ///     if the underlying Client is connected,
         ///     <br></br>
@@ -93,11 +82,13 @@ namespace TwitchLib.Communication.Interfaces
         ///     <see langword="true"/>, if the client reconnected; <see langword="false"/> otherwise
         /// </returns>
         bool Reconnect();
+
         /// <summary>
         ///     stops everything
         ///     and waits for the via <see cref="IClientOptions.DisconnectWait"/> given amount of milliseconds
         /// </summary>
         void Close();
+
         /// <summary>
         ///     sends the given irc-<paramref name="message"/>
         /// </summary>
@@ -110,6 +101,5 @@ namespace TwitchLib.Communication.Interfaces
         ///     <see langword="false"/> otherwise
         /// </returns>
         bool Send(string message);
-        #endregion methods
     }
 }

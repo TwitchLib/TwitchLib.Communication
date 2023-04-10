@@ -109,7 +109,7 @@ namespace TwitchLib.Communication.Services
                         }
                         Logger?.TraceAction(GetType(), "Client reconnected");
                     }
-                    Task.Delay(MonitorTaskDelayInMilliseconds, Token).GetAwaiter().GetResult();
+                    Task.Delay(MonitorTaskDelayInMilliseconds).GetAwaiter().GetResult();
                 }
             }
             catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))

@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Microsoft.Extensions.Logging;
-
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Interfaces;
 using TwitchLib.Communication.Models;
 using TwitchLib.Communication.Tests.Helpers;
-
 using Xunit;
 
 namespace TwitchLib.Communication.Tests.Clients
@@ -26,13 +22,11 @@ namespace TwitchLib.Communication.Tests.Clients
     ///         <see cref="Clients.WebSocketClient"/>
     ///     </list>
     /// </typeparam>
-    [SuppressMessage("Style", "IDE0058")]
-    [SuppressMessage("Style", "CA2254")]
-    public abstract class AClientTestsBase<T> where T : IClient
+    public abstract class ClientTestsBase<T> where T : IClient
     {
         private static uint WaitAfterDispose => 3;
         private static TimeSpan WaitOneDuration => TimeSpan.FromSeconds(5);
-        public AClientTestsBase() { }
+
         [Fact]
         public void Client_Raises_OnConnected_EventArgs()
         {
@@ -64,6 +58,7 @@ namespace TwitchLib.Communication.Tests.Clients
                 TheFinally(client);
             }
         }
+
         [Fact]
         public void Client_Raises_OnDisconnected_EventArgs()
         {
@@ -100,6 +95,7 @@ namespace TwitchLib.Communication.Tests.Clients
                 TheFinally(client);
             }
         }
+
         [Fact]
         public void Client_Raises_OnReconnected_EventArgs()
         {
@@ -114,15 +110,15 @@ namespace TwitchLib.Communication.Tests.Clients
                 Assert.Raises<OnConnectedEventArgs>(
                     h => client.OnReconnected += h,
                     h => client.OnReconnected -= h,
-                     () =>
-                     {
-                         client.OnConnected += (s, e) => client.Reconnect();
+                    () =>
+                    {
+                        client.OnConnected += (s, e) => client.Reconnect();
 
-                         client.OnReconnected += (s, e) => pauseReconnected.Set();
-                         client.Open();
+                        client.OnReconnected += (s, e) => pauseReconnected.Set();
+                        client.Open();
 
-                         Assert.True(pauseReconnected.WaitOne(WaitOneDuration));
-                     });
+                        Assert.True(pauseReconnected.WaitOne(WaitOneDuration));
+                    });
             }
             catch (Exception e)
             {
@@ -134,6 +130,7 @@ namespace TwitchLib.Communication.Tests.Clients
                 TheFinally(client);
             }
         }
+
         [Fact]
         public void Dispose_Client_Before_Connecting_IsOK()
         {
@@ -153,9 +150,10 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                TheFinally((T?) client);
+                TheFinally((T?)client);
             }
         }
+
         [Fact]
         public void Client_Can_SendAndReceive_Messages()
         {
@@ -165,30 +163,29 @@ namespace TwitchLib.Communication.Tests.Clients
             Assert.NotNull(client);
             try
             {
-
                 ManualResetEvent pauseConnected = new ManualResetEvent(false);
                 ManualResetEvent pauseReadMessage = new ManualResetEvent(false);
 
                 Assert.Raises<OnMessageEventArgs>(
                     h => client.OnMessage += h,
                     h => client.OnMessage -= h,
-                     () =>
-                     {
-                         client.OnConnected += (sender, e) => pauseConnected.Set();
+                    () =>
+                    {
+                        client.OnConnected += (sender, e) => pauseConnected.Set();
 
-                         client.OnMessage += (sender, e) =>
-                         {
-                             Assert.NotNull(e.Message);
-                             string msg = e.Message;
-                             Assert.StartsWith("PONG :tmi.twitch.tv", e.Message);
-                             pauseReadMessage.Set();
-                         };
+                        client.OnMessage += (sender, e) =>
+                        {
+                            Assert.NotNull(e.Message);
+                            string msg = e.Message;
+                            Assert.StartsWith("PONG :tmi.twitch.tv", e.Message);
+                            pauseReadMessage.Set();
+                        };
 
-                         client.Open();
-                         Assert.True(client.Send("PING"));
-                         Assert.True(pauseConnected.WaitOne(WaitOneDuration));
-                         Assert.True(pauseReadMessage.WaitOne(WaitOneDuration));
-                     });
+                        client.Open();
+                        Assert.True(client.Send("PING"));
+                        Assert.True(pauseConnected.WaitOne(WaitOneDuration));
+                        Assert.True(pauseReadMessage.WaitOne(WaitOneDuration));
+                    });
             }
             catch (Exception e)
             {
@@ -200,24 +197,27 @@ namespace TwitchLib.Communication.Tests.Clients
                 TheFinally(client);
             }
         }
+
         private static void TheFinally(T? client)
         {
             client?.Dispose();
             Task.Delay(TimeSpan.FromSeconds(WaitAfterDispose)).GetAwaiter().GetResult();
         }
+
         private static TClient? GetClient<TClient>(ILogger<TClient> logger, IClientOptions? options = null)
         {
-            Type[] constructorParameterTypes = new Type[] {
+            Type[] constructorParameterTypes = new Type[]
+            {
                 typeof(IClientOptions),
                 typeof(ILogger<TClient>)
             };
             ConstructorInfo? constructor = typeof(TClient).GetConstructor(constructorParameterTypes);
-            object[] constructorParameters = new object[] {
-                options??new ClientOptions(),
+            object[] constructorParameters = new object[]
+            {
+                options ?? new ClientOptions(),
                 logger
             };
-            return (TClient?) constructor?.Invoke(constructorParameters);
-
+            return (TClient?)constructor?.Invoke(constructorParameters);
         }
     }
 }

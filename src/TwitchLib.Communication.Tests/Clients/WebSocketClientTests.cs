@@ -2,8 +2,7 @@
 
 namespace TwitchLib.Communication.Tests.Clients
 {
-    public class WebSocketClientTests : AClientTestsBase<WebSocketClient>
+    public class WebSocketClientTests : ClientTestsBase<WebSocketClient>
     {
-        public WebSocketClientTests() { }
     }
 }

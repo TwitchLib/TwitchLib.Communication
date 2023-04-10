@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
-
 using TwitchLib.Communication.Models;
-
 using Xunit;
 
 namespace TwitchLib.Communication.Tests.Models
@@ -15,14 +12,11 @@ namespace TwitchLib.Communication.Tests.Models
         ///     <see cref="ReconnectionPolicy.ReconnectionPolicy(Boolean)"/> = <see langword="false"/>
         /// </summary>
         [Fact]
-        [SuppressMessage("Style", "CA1806")]
-        [SuppressMessage("Style", "IDE0058")]
         public void ReconnectionPolicy_Throws_ArgumentOutOfRangeException_YES()
         {
             try
             {
-                // Suppress CA1806 and IDE0058
-                new ReconnectionPolicy(false);
+                _ = new ReconnectionPolicy(false);
                 Assert.Fail($"{nameof(ArgumentOutOfRangeException)} expected.");
             }
             catch (Exception e)
@@ -31,6 +25,7 @@ namespace TwitchLib.Communication.Tests.Models
                 Assert.IsType<ArgumentOutOfRangeException>(e);
             }
         }
+
         /// <summary>
         ///     checks <see cref="ClientOptions.ReconnectionPolicy"/>
         ///     <br></br>
@@ -49,6 +44,7 @@ namespace TwitchLib.Communication.Tests.Models
                 Assert.Fail(e.ToString());
             }
         }
+
         /// <summary>
         ///     checks <see cref="ClientOptions.ReconnectionPolicy"/>
         ///     <br></br>

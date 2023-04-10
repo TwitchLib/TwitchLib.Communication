@@ -26,13 +26,19 @@ namespace TwitchLib.Communication.Tests.Clients
     {
         private static uint WaitAfterDispose => 3;
         private static TimeSpan WaitOneDuration => TimeSpan.FromSeconds(5);
+        private static IClientOptions Options;
 
+        public ClientTestsBase(IClientOptions options = null)
+        {
+            Options = options;
+        }
+        
         [Fact]
         public void Client_Raises_OnConnected_EventArgs()
         {
             // create one logger per test-method! - cause one file per test-method is generated
             ILogger<T> logger = TestLogHelper.GetLogger<T>();
-            T? client = GetClient(logger);
+            T? client = GetClient(logger, Options);
             Assert.NotNull(client);
             try
             {
@@ -55,7 +61,7 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                TheFinally(client);
+                Cleanup(client);
             }
         }
 
@@ -64,7 +70,7 @@ namespace TwitchLib.Communication.Tests.Clients
         {
             // create one logger per test-method! - cause one file per test-method is generated
             ILogger<T> logger = TestLogHelper.GetLogger<T>();
-            T? client = GetClient(logger);
+            T? client = GetClient(logger, Options);
             Assert.NotNull(client);
             try
             {
@@ -92,7 +98,7 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                TheFinally(client);
+                Cleanup(client);
             }
         }
 
@@ -101,7 +107,7 @@ namespace TwitchLib.Communication.Tests.Clients
         {
             // create one logger per test-method! - cause one file per test-method is generated
             ILogger<T> logger = TestLogHelper.GetLogger<T>();
-            T? client = GetClient(logger);
+            T? client = GetClient(logger, Options);
             Assert.NotNull(client);
             try
             {
@@ -127,7 +133,7 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                TheFinally(client);
+                Cleanup(client);
             }
         }
 
@@ -139,7 +145,7 @@ namespace TwitchLib.Communication.Tests.Clients
             IClient? client = null;
             try
             {
-                client = GetClient(logger);
+                client = GetClient(logger, Options);
                 Assert.NotNull(client);
                 client.Dispose();
             }
@@ -150,7 +156,7 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                TheFinally((T?)client);
+                Cleanup((T?)client);
             }
         }
 
@@ -159,7 +165,7 @@ namespace TwitchLib.Communication.Tests.Clients
         {
             // create one logger per test-method! - cause one file per test-method is generated
             ILogger<T> logger = TestLogHelper.GetLogger<T>();
-            T? client = GetClient(logger);
+            T? client = GetClient(logger, Options);
             Assert.NotNull(client);
             try
             {
@@ -194,11 +200,11 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                TheFinally(client);
+                Cleanup(client);
             }
         }
 
-        private static void TheFinally(T? client)
+        private static void Cleanup(T? client)
         {
             client?.Dispose();
             Task.Delay(TimeSpan.FromSeconds(WaitAfterDispose)).GetAwaiter().GetResult();

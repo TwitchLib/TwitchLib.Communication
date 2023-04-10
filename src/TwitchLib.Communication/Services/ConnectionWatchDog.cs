@@ -28,7 +28,7 @@ namespace TwitchLib.Communication.Services
         /// </summary>
         private CancellationTokenSource CancellationTokenSource { get; set; }
 
-        private int MonitorTaskDelayInMilliseconds => 200;
+        private static int MonitorTaskDelayInMilliseconds => 200;
 
         internal ConnectionWatchDog(
             ClientBase<T> client,

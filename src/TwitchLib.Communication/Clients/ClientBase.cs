@@ -33,13 +33,13 @@ namespace TwitchLib.Communication.Clients
 
 
         #region events public
-        public event EventHandler<ConnectedEventArgs> Connected;
-        public event EventHandler<DisconnectedEventArgs> Disconnected;
-        public event EventHandler<ErrorEventArgs> Error;
-        public event EventHandler<FatalErrorEventArgs> Fatality;
-        public event EventHandler<MessageEventArgs> Message;
-        public event EventHandler<SendFailedEventArgs> SendFailed;
-        public event EventHandler<ReconnectedEventArgs> Reconnected;
+        public event EventHandler<OnConnectedEventArgs> Connected;
+        public event EventHandler<OnDisconnectedEventArgs> Disconnected;
+        public event EventHandler<OnErrorEventArgs> Error;
+        public event EventHandler<OnFatalErrorEventArgs> Fatality;
+        public event EventHandler<OnMessageEventArgs> Message;
+        public event EventHandler<OnSendFailedEventArgs> SendFailed;
+        public event EventHandler<OnReconnectedEventArgs> Reconnected;
         #endregion events public
 
 
@@ -72,7 +72,7 @@ namespace TwitchLib.Communication.Clients
         /// <summary>
         ///     wont raise the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
-        internal void RaiseSendFailed(SendFailedEventArgs eventArgs)
+        internal void RaiseSendFailed(OnSendFailedEventArgs eventArgs)
         {
             Logger?.TraceMethodCall(GetType());
             if (Token.IsCancellationRequested)
@@ -85,7 +85,7 @@ namespace TwitchLib.Communication.Clients
         /// <summary>
         ///  wont raise the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
-        internal void RaiseError(ErrorEventArgs eventArgs)
+        internal void RaiseError(OnErrorEventArgs eventArgs)
         {
             Logger?.TraceMethodCall(GetType());
             if (Token.IsCancellationRequested)
@@ -104,12 +104,12 @@ namespace TwitchLib.Communication.Clients
             {
                 return;
             }
-            Reconnected?.Invoke(this, new ReconnectedEventArgs());
+            Reconnected?.Invoke(this, new OnReconnectedEventArgs());
         }
         /// <summary>
         ///     wont raise the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
-        internal void RaiseMessage(MessageEventArgs eventArgs)
+        internal void RaiseMessage(OnMessageEventArgs eventArgs)
         {
             Logger?.TraceMethodCall(GetType());
             if (Token.IsCancellationRequested)
@@ -128,22 +128,22 @@ namespace TwitchLib.Communication.Clients
             {
                 return;
             }
-            FatalErrorEventArgs onFatalErrorEventArgs = new FatalErrorEventArgs("Fatal network error.");
+            OnFatalErrorEventArgs onFatalErrorEventArgs = new OnFatalErrorEventArgs("Fatal network error.");
             if (e != null)
             {
-                onFatalErrorEventArgs = new FatalErrorEventArgs(e);
+                onFatalErrorEventArgs = new OnFatalErrorEventArgs(e);
             }
             Fatality?.Invoke(this, onFatalErrorEventArgs);
         }
         internal void RaiseDisconnected()
         {
             Logger?.TraceMethodCall(GetType());
-            Disconnected?.Invoke(this, new DisconnectedEventArgs());
+            Disconnected?.Invoke(this, new OnDisconnectedEventArgs());
         }
         internal void RaiseConnected()
         {
             Logger?.TraceMethodCall(GetType());
-            Connected?.Invoke(this, new ConnectedEventArgs());
+            Connected?.Invoke(this, new OnConnectedEventArgs());
         }
         #endregion invoker/raiser internal
 
@@ -162,7 +162,7 @@ namespace TwitchLib.Communication.Clients
             }
             catch (Exception e)
             {
-                RaiseSendFailed(new SendFailedEventArgs(message, e));
+                RaiseSendFailed(new OnSendFailedEventArgs(message, e));
                 return false;
             }
         }
@@ -258,7 +258,7 @@ namespace TwitchLib.Communication.Clients
             catch (Exception ex)
             {
                 Logger?.LogExceptionAsError(GetType(), ex);
-                RaiseError(new ErrorEventArgs(ex));
+                RaiseError(new OnErrorEventArgs(ex));
                 RaiseFatal();
                 return false;
             }

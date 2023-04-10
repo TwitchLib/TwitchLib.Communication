@@ -120,7 +120,7 @@ namespace TwitchLib.Communication.Services
             catch (Exception ex)
             {
                 Logger?.LogExceptionAsError(GetType(), ex);
-                Client.RaiseError(new ErrorEventArgs(ex));
+                Client.RaiseError(new OnErrorEventArgs(ex));
                 Client.RaiseFatal();
 
                 // to ensure CancellationTokenSource is set to null again

@@ -10,8 +10,6 @@ using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Extensions;
 using TwitchLib.Communication.Interfaces;
 
-using ErrorEventArgs = TwitchLib.Communication.Events.ErrorEventArgs;
-
 namespace TwitchLib.Communication.Clients
 {
 
@@ -61,7 +59,7 @@ namespace TwitchLib.Communication.Clients
                         continue;
                     }
 
-                    RaiseMessage(new MessageEventArgs(input));
+                    RaiseMessage(new OnMessageEventArgs(input));
                 }
                 catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))
                 {
@@ -71,7 +69,7 @@ namespace TwitchLib.Communication.Clients
                 catch (Exception ex)
                 {
                     Logger?.LogExceptionAsError(GetType(), ex);
-                    RaiseError(new ErrorEventArgs(ex));
+                    RaiseError(new OnErrorEventArgs(ex));
                     break;
                 }
             }

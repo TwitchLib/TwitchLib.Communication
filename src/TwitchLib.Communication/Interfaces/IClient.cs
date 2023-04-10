@@ -26,37 +26,37 @@ namespace TwitchLib.Communication.Interfaces
         /// <summary>
         ///     Fires when the Client has connected
         /// </summary>
-        event EventHandler<ConnectedEventArgs> Connected;
+        event EventHandler<OnConnectedEventArgs> Connected;
 
         /// <summary>
         ///     Fires when the Client disconnects
         /// </summary>
-        event EventHandler<DisconnectedEventArgs> Disconnected;
+        event EventHandler<OnDisconnectedEventArgs> Disconnected;
 
         /// <summary>
         ///     Fires when An Exception Occurs in the client
         /// </summary>
-        event EventHandler<ErrorEventArgs> Error;
+        event EventHandler<OnErrorEventArgs> Error;
 
         /// <summary>
         ///     Fires when a Fatal Error Occurs.
         /// </summary>
-        event EventHandler<FatalErrorEventArgs> Fatality;
+        event EventHandler<OnFatalErrorEventArgs> Fatality;
 
         /// <summary>
         ///     Fires when a Message/ group of messages is received.
         /// </summary>
-        event EventHandler<MessageEventArgs> Message;
+        event EventHandler<OnMessageEventArgs> Message;
 
         /// <summary>
         ///     Fires when a message Send event failed.
         /// </summary>
-        event EventHandler<SendFailedEventArgs> SendFailed;
+        event EventHandler<OnSendFailedEventArgs> SendFailed;
 
         /// <summary>
         ///     Fires when the client reconnects automatically
         /// </summary>
-        event EventHandler<ReconnectedEventArgs> Reconnected;
+        event EventHandler<OnReconnectedEventArgs> Reconnected;
         #endregion events
 
 

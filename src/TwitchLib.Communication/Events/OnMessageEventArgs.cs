@@ -2,10 +2,10 @@
 
 namespace TwitchLib.Communication.Events
 {
-    public class MessageEventArgs : EventArgs
+    public class OnMessageEventArgs : EventArgs
     {
         public string Message { get; }
-        public MessageEventArgs(string message)
+        public OnMessageEventArgs(string message)
         {
             Message = message;
         }

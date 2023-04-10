@@ -50,7 +50,7 @@ namespace TwitchLib.Communication.Tests.Clients
             {
                 ManualResetEvent pauseConnected = new ManualResetEvent(false);
 
-                Assert.Raises<ConnectedEventArgs>(
+                Assert.Raises<OnConnectedEventArgs>(
                     h => client.Connected += h,
                     h => client.Connected -= h,
                     () =>
@@ -81,7 +81,7 @@ namespace TwitchLib.Communication.Tests.Clients
             {
                 ManualResetEvent pauseDisconnected = new ManualResetEvent(false);
 
-                Assert.Raises<DisconnectedEventArgs>(
+                Assert.Raises<OnDisconnectedEventArgs>(
                     h => client.Disconnected += h,
                     h => client.Disconnected -= h,
                     () =>
@@ -117,7 +117,7 @@ namespace TwitchLib.Communication.Tests.Clients
             {
                 ManualResetEvent pauseReconnected = new ManualResetEvent(false);
 
-                Assert.Raises<ReconnectedEventArgs>(
+                Assert.Raises<OnReconnectedEventArgs>(
                     h => client.Reconnected += h,
                     h => client.Reconnected -= h,
                      () =>
@@ -175,7 +175,7 @@ namespace TwitchLib.Communication.Tests.Clients
                 ManualResetEvent pauseConnected = new ManualResetEvent(false);
                 ManualResetEvent pauseReadMessage = new ManualResetEvent(false);
 
-                Assert.Raises<MessageEventArgs>(
+                Assert.Raises<OnMessageEventArgs>(
                     h => client.Message += h,
                     h => client.Message -= h,
                      () =>

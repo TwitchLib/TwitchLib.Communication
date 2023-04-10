@@ -80,7 +80,7 @@ namespace TwitchLib.Communication.Clients
                 catch (Exception ex)
                 {
                     Logger?.LogExceptionAsError(GetType(), ex);
-                    RaiseError(new ErrorEventArgs(ex));
+                    RaiseError(new OnErrorEventArgs(ex));
                     break;
                 }
 
@@ -97,7 +97,7 @@ namespace TwitchLib.Communication.Clients
 
                     case WebSocketMessageType.Text:
                         message += Encoding.UTF8.GetString(buffer).TrimEnd('\0');
-                        RaiseMessage(new MessageEventArgs(message));
+                        RaiseMessage(new OnMessageEventArgs(message));
                         break;
                     case WebSocketMessageType.Binary:
                         break;

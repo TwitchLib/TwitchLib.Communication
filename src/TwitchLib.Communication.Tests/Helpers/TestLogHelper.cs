@@ -53,6 +53,9 @@ namespace TwitchLib.Communication.Tests.Helpers
             LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
             loggerConfiguration.MinimumLevel.Verbose();
             string path = $"../../../Logs/{typeName}/{callerMemberName}.log";
+            loggerConfiguration.WriteTo.Console(
+                restrictedToMinimumLevel: logEventLevel,
+                outputTemplate: OUTPUT_TEMPLATE);
             loggerConfiguration.WriteTo.File(
                 path: path,
                 restrictedToMinimumLevel: logEventLevel,

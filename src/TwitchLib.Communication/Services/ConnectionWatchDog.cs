@@ -32,7 +32,7 @@ namespace TwitchLib.Communication.Services
         /// </summary>
         private CancellationTokenSource CancellationTokenSource { get; set; }
         private CancellationToken Token => CancellationTokenSource.Token;
-        private int MonitorTaskDelayInMilliseconds => 200;
+        private static int MonitorTaskDelayInMilliseconds => 200;
         #endregion properties private
 
 
@@ -60,13 +60,7 @@ namespace TwitchLib.Communication.Services
             }
             // this should be the only place where a new instance of CancellationTokenSource is set
             CancellationTokenSource = new CancellationTokenSource();
-            if (Token == null)
-            {
-                Exception ex = new InvalidOperationException($"{nameof(Token)} was null!");
-                Logger?.LogExceptionAsError(GetType(), ex);
-                Client.RaiseFatal(ex);
-                throw ex;
-            }
+
             return Task.Run(MonitorTaskAction, Token);
         }
 
@@ -76,7 +70,7 @@ namespace TwitchLib.Communication.Services
             CancellationTokenSource?.Cancel();
             // give MonitorTaskAction a chance to catch cancellation
             // otherwise it may result in an Exception
-            Task.Delay(MonitorTaskDelayInMilliseconds * 2).GetAwaiter().GetResult();
+            Task.Delay(MonitorTaskDelayInMilliseconds * 2, Token).GetAwaiter().GetResult();
             CancellationTokenSource?.Dispose();
             // set it to null for the check within this.StartMonitorTask()
             CancellationTokenSource = null;
@@ -90,14 +84,14 @@ namespace TwitchLib.Communication.Services
             Logger?.TraceMethodCall(GetType());
             try
             {
-                while (Token != null && !Token.IsCancellationRequested)
+                while (!Token.IsCancellationRequested)
                 {
                     // we expect the client is connected,
                     // when this monitor task starts
-                    // cause ABaseClient.Open() starts networkservices after a connection could be established
+                    // cause BaseClient.Open() starts NetworkServices after a connection could be established
                     if (!Client.IsConnected)
                     {
-                        Logger?.TraceAction(GetType(), "Client isnt connected anymore");
+                        Logger?.TraceAction(GetType(), "Client isn't connected anymore");
                         // no call to close needed,
                         // ReconnectInternal() calls the correct Close-Method within the Client
                         // ReconnectInternal() makes attempts to reconnect according to the ReconnectionPolicy within the IClientOptions
@@ -105,7 +99,7 @@ namespace TwitchLib.Communication.Services
                         bool connected = Client.ReconnectInternal();
                         if (!connected)
                         {
-                            Logger?.TraceAction(GetType(), "Client couldnt reconnect");
+                            Logger?.TraceAction(GetType(), "Client couldn't reconnect");
                             // if the ReconnectionPolicy is set up to be finite
                             // and no connection could be established
                             // a call to Client.Close() is made
@@ -115,12 +109,12 @@ namespace TwitchLib.Communication.Services
                         }
                         Logger?.TraceAction(GetType(), "Client reconnected");
                     }
-                    Task.Delay(MonitorTaskDelayInMilliseconds).GetAwaiter().GetResult();
+                    Task.Delay(MonitorTaskDelayInMilliseconds, Token).GetAwaiter().GetResult();
                 }
             }
             catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) || ex.GetType() == typeof(OperationCanceledException))
             {
-                // occurs if the Tasks are canceled by the CancelationTokenSource.Token
+                // occurs if the Tasks are canceled by the CancellationTokenSource.Token
                 Logger?.LogExceptionAsInformation(GetType(), ex);
             }
             catch (Exception ex)

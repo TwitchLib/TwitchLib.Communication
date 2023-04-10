@@ -13,16 +13,6 @@ namespace TwitchLib.Communication.Helpers
             && !task.IsCompletedSuccessfully
 #endif
                 && !task.IsCanceled;
-
-            //if (task == null) return false;
-            //switch (task.Status)
-            //{
-            //    case TaskStatus.RanToCompletion:
-            //    case TaskStatus.Faulted:
-            //    case TaskStatus.Canceled:
-            //        return false;
-            //}
-            //return true;
         }
     }
 }

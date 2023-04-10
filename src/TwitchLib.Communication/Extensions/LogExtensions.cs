@@ -47,7 +47,7 @@ namespace TwitchLib.Communication.Extensions
                                        [CallerMemberName] string callerMemberName = "",
                                        [CallerLineNumber] int callerLineNumber = 0)
         {
-            logger?.LogTrace("{FullName}.{CallerMemberName} at line {CallerLineNumber}: {Cction}",
+            logger?.LogTrace("{FullName}.{CallerMemberName} at line {CallerLineNumber}: {Action}",
                              type.FullName, callerMemberName, callerLineNumber, action);
         }
     }

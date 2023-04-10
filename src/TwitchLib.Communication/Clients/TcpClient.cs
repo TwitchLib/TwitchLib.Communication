@@ -13,7 +13,7 @@ namespace TwitchLib.Communication.Clients
     {
         protected override string Url => "irc.chat.twitch.tv";
 
-        private int Port => Options.UseSsl ? 443 : 80;
+        private int Port => Options.UseSsl ? 6697 : 6667;
         private StreamReader Reader { get; set; }
         private StreamWriter Writer { get; set; }
 

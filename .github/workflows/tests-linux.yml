@@ -1,4 +1,4 @@
-name: Test TwitchLib.Communication
+name: Test TwitchLib.Communication Linux
 
 on:
   [push]

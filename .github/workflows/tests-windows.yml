@@ -1,4 +1,4 @@
-name: Test TwitchLib.Communication
+name: Test TwitchLib.Communication Windows
 
 on:
   [push]

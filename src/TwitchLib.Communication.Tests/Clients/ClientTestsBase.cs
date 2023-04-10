@@ -32,7 +32,13 @@ namespace TwitchLib.Communication.Tests.Clients
     {
         private static uint WaitAfterDispose => 3;
         private static TimeSpan WaitOneDuration => TimeSpan.FromSeconds(5);
-        public ClientTestsBase() { }
+
+        private static IClientOptions _options;
+
+        public ClientTestsBase(IClientOptions options = null)
+        {
+            _options = options;
+        }
         [Fact]
         public void Client_Raises_OnConnected_EventArgs()
         {
@@ -61,7 +67,7 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                TheFinally(client);
+                Cleanup(client);
             }
         }
         [Fact]
@@ -97,7 +103,7 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                TheFinally(client);
+                Cleanup(client);
             }
         }
         [Fact]
@@ -131,7 +137,7 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                TheFinally(client);
+                Cleanup(client);
             }
         }
         [Fact]
@@ -153,7 +159,7 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                TheFinally((T?) client);
+                Cleanup((T?) client);
             }
         }
         [Fact]
@@ -197,10 +203,10 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                TheFinally(client);
+                Cleanup(client);
             }
         }
-        private static void TheFinally(T? client)
+        private static void Cleanup(T? client)
         {
             client?.Dispose();
             Task.Delay(TimeSpan.FromSeconds(WaitAfterDispose)).GetAwaiter().GetResult();

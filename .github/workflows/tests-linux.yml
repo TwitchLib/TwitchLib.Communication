@@ -1,0 +1,25 @@
+name: Test TwitchLib.Communication
+
+on:
+  [push]
+
+jobs:
+  tests:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: [ '6.0.x' ]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: ${{ matrix.dotnet-version }}
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build TwitchLib.Communication
+      run: dotnet build --no-restore --configuration Release
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal

@@ -70,7 +70,7 @@ namespace TwitchLib.Communication.Services
             CancellationTokenSource?.Cancel();
             // give MonitorTaskAction a chance to catch cancellation
             // otherwise it may result in an Exception
-            Task.Delay(MonitorTaskDelayInMilliseconds * 2, Token).GetAwaiter().GetResult();
+            Task.Delay(MonitorTaskDelayInMilliseconds * 2).GetAwaiter().GetResult();
             CancellationTokenSource?.Dispose();
             // set it to null for the check within this.StartMonitorTask()
             CancellationTokenSource = null;

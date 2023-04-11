@@ -103,7 +103,7 @@ namespace TwitchLib.Communication.Clients
             }
         }
 
-        protected override void SpecificClientSend(string message)
+        protected override void ClientSend(string message)
         {
             Logger?.TraceMethodCall(GetType());
 
@@ -132,7 +132,7 @@ namespace TwitchLib.Communication.Clients
             sendTask.GetAwaiter().GetResult();
         }
 
-        protected override void SpecificClientConnect()
+        protected override void ConnectClient()
         {
             Logger?.TraceMethodCall(GetType());
             if (Client == null)
@@ -197,14 +197,13 @@ namespace TwitchLib.Communication.Clients
             }
         }
 
-        protected override ClientWebSocket NewClient()
+        protected override ClientWebSocket CreateClient()
         {
             Logger?.TraceMethodCall(GetType());
-            var clientWebSocket = new ClientWebSocket();
-            return clientWebSocket;
+            return new ClientWebSocket();
         }
 
-        protected override void SpecificClientClose()
+        protected override void CloseClient()
         {
             Logger?.TraceMethodCall(GetType());
             Client?.Abort();

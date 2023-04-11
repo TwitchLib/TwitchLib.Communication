@@ -50,7 +50,7 @@ namespace TwitchLib.Communication.Clients
                 catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
                                            ex.GetType() == typeof(OperationCanceledException))
                 {
-                    // occurs if the Tasks are canceled by the CancelationTokenSource.Token
+                    // occurs if the Tasks are canceled by the CancellationTokenSource.Token
                     Logger?.LogExceptionAsInformation(GetType(), ex);
                 }
                 catch (Exception ex)
@@ -62,7 +62,7 @@ namespace TwitchLib.Communication.Clients
             }
         }
 
-        protected override void SpecificClientSend(string message)
+        protected override void ClientSend(string message)
         {
             Logger?.TraceMethodCall(GetType());
 
@@ -82,7 +82,7 @@ namespace TwitchLib.Communication.Clients
             Writer.Flush();
         }
 
-        protected override void SpecificClientConnect()
+        protected override void ConnectClient()
         {
             Logger?.TraceMethodCall(GetType());
             if (Client == null)
@@ -160,25 +160,22 @@ namespace TwitchLib.Communication.Clients
             }
         }
 
-        protected override System.Net.Sockets.TcpClient NewClient()
+        protected override System.Net.Sockets.TcpClient CreateClient()
         {
             Logger?.TraceMethodCall(GetType());
-            System.Net.Sockets.TcpClient tcpClient = new System.Net.Sockets.TcpClient
+            
+            return new System.Net.Sockets.TcpClient
             {
                 // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient.lingerstate?view=netstandard-2.0#remarks
                 LingerState = new System.Net.Sockets.LingerOption(true, 0)
             };
-            return tcpClient;
         }
 
-        protected override void SpecificClientClose()
+        protected override void CloseClient()
         {
             Logger?.TraceMethodCall(GetType());
-            Reader?.Close();
             Reader?.Dispose();
-            Writer?.Close();
             Writer?.Dispose();
-            Client?.Close();
             Client?.Dispose();
         }
     }

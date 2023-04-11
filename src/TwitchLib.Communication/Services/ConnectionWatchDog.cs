@@ -26,9 +26,9 @@ namespace TwitchLib.Communication.Services
         ///         </item>
         ///     </list>
         /// </summary>
-        private CancellationTokenSource CancellationTokenSource { get; set; }
+        private CancellationTokenSource _cancellationTokenSource;
 
-        private static int MonitorTaskDelayInMilliseconds => 200;
+        private const int MonitorTaskDelayInMilliseconds = 200;
 
         internal ConnectionWatchDog(
             ClientBase<T> client,
@@ -42,7 +42,7 @@ namespace TwitchLib.Communication.Services
         {
             _logger?.TraceMethodCall(GetType());
             // We dont want to start more than one WatchDog
-            if (CancellationTokenSource != null)
+            if (_cancellationTokenSource != null)
             {
                 Exception ex = new InvalidOperationException("Monitor Task cant be started more than once!");
                 _logger?.LogExceptionAsError(GetType(), ex);
@@ -50,21 +50,21 @@ namespace TwitchLib.Communication.Services
             }
 
             // This should be the only place where a new instance of CancellationTokenSource is set
-            CancellationTokenSource = new CancellationTokenSource();
+            _cancellationTokenSource = new CancellationTokenSource();
 
-            return Task.Run(MonitorTaskAction, CancellationTokenSource.Token);
+            return Task.Run(MonitorTaskAction, _cancellationTokenSource.Token);
         }
 
         internal void Stop()
         {
             _logger?.TraceMethodCall(GetType());
-            CancellationTokenSource?.Cancel();
+            _cancellationTokenSource?.Cancel();
             // give MonitorTaskAction a chance to catch cancellation
             // otherwise it may result in an Exception
             Task.Delay(MonitorTaskDelayInMilliseconds * 2).GetAwaiter().GetResult();
-            CancellationTokenSource?.Dispose();
+            _cancellationTokenSource?.Dispose();
             // set it to null for the check within this.StartMonitorTask()
-            CancellationTokenSource = null;
+            _cancellationTokenSource = null;
         }
 
         private void MonitorTaskAction()
@@ -72,7 +72,7 @@ namespace TwitchLib.Communication.Services
             _logger?.TraceMethodCall(GetType());
             try
             {
-                while (CancellationTokenSource != null && !CancellationTokenSource.Token.IsCancellationRequested)
+                while (_cancellationTokenSource != null && !_cancellationTokenSource.Token.IsCancellationRequested)
                 {
                     // we expect the client is connected,
                     // when this monitor task starts

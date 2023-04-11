@@ -16,41 +16,40 @@ namespace TwitchLib.Communication.Services
         // Each Task is held in its own variable to be more precise
         private Task _listenTask;
         private Task _monitorTask;
+        private readonly ClientBase<T> _client;
+        private readonly ILogger _logger;
+        private readonly ConnectionWatchDog<T> _connectionWatchDog;
 
-        private ILogger Logger { get; }
-        private CancellationToken Token => Client.Token;
-        private ClientBase<T> Client { get; }
-
-        internal ConnectionWatchDog<T> ConnectionWatchDog { get; }
+        private CancellationToken Token => _client.Token;
 
         internal NetworkServices(
             ClientBase<T> client,
             ILogger logger = null)
         {
-            Logger = logger;
-            Client = client;
-            ConnectionWatchDog = new ConnectionWatchDog<T>(Client, logger);
+            _logger = logger;
+            _client = client;
+            _connectionWatchDog = new ConnectionWatchDog<T>(_client, logger);
         }
 
         internal void Start()
         {
-            Logger?.TraceMethodCall(GetType());
+            _logger?.TraceMethodCall(GetType());
             if (_monitorTask == null || !TaskHelper.IsTaskRunning(_monitorTask))
             {
                 // this task is probably still running
                 // may be in case of a network connection loss
                 // all other Tasks haven't been started or have been canceled!
                 // ConnectionWatchDog is the only one, that has a seperate CancellationTokenSource!
-                _monitorTask = ConnectionWatchDog.StartMonitorTask();
+                _monitorTask = _connectionWatchDog.StartMonitorTask();
             }
 
-            _listenTask = Task.Run(Client.ListenTaskAction, Token);
+            _listenTask = Task.Run(_client.ListenTaskAction, Token);
         }
 
         internal void Stop()
         {
-            Logger?.TraceMethodCall(GetType());
-            ConnectionWatchDog.Stop();
+            _logger?.TraceMethodCall(GetType());
+            _connectionWatchDog.Stop();
         }
     }
 }

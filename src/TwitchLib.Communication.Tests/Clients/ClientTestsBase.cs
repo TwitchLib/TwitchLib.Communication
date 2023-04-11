@@ -180,7 +180,11 @@ namespace TwitchLib.Communication.Tests.Clients
                     h => client.Message -= h,
                      () =>
                      {
-                         client.Connected += (sender, e) => pauseConnected.Set();
+                         client.Connected += (sender, e) =>
+                         {
+                             pauseConnected.Set();
+                             Assert.True(client.Send("PING"));
+                         };
 
                          client.Message += (sender, e) =>
                          {
@@ -191,7 +195,6 @@ namespace TwitchLib.Communication.Tests.Clients
                          };
 
                          client.Open();
-                         Assert.True(client.Send("PING"));
                          Assert.True(pauseConnected.WaitOne(WaitOneDuration));
                          Assert.True(pauseReadMessage.WaitOne(WaitOneDuration));
                      });

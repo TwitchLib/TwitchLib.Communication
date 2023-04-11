@@ -170,11 +170,7 @@ namespace TwitchLib.Communication.Clients
         protected override System.Net.Sockets.TcpClient NewClient()
         {
             Logger?.TraceMethodCall(GetType());
-            System.Net.Sockets.TcpClient tcpClient = new System.Net.Sockets.TcpClient
-            {
-                // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient.lingerstate?view=netstandard-2.0#remarks
-                LingerState = new System.Net.Sockets.LingerOption(true, 0)
-            };
+            System.Net.Sockets.TcpClient tcpClient = new System.Net.Sockets.TcpClient();
             return tcpClient;
         }
         protected override void SpecificClientClose()

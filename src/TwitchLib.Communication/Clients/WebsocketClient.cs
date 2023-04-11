@@ -151,7 +151,7 @@ namespace TwitchLib.Communication.Clients
             // https://stackoverflow.com/questions/4238345/asynchronously-wait-for-taskt-to-complete-with-timeout
             // the following answer
             // NET6_0_OR_GREATER: https://stackoverflow.com/a/68998339
-            Task connectTask = Client.ConnectAsync(new Uri(URL),
+            Task connectTask = Client.ConnectAsync(new Uri(Url),
                                                    Token);
             Task waitTask = connectTask.WaitAsync(TimeOutEstablishConnection,
                                                   Token);

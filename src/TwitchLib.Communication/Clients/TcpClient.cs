@@ -101,7 +101,7 @@ namespace TwitchLib.Communication.Clients
             // the following answer
             // NET6_0_OR_GREATER: https://stackoverflow.com/a/68998339
 
-            Task connectTask = Client.ConnectAsync(URL,
+            Task connectTask = Client.ConnectAsync(Url,
                                                    Port);
             Task waitTask = connectTask.WaitAsync(TimeOutEstablishConnection,
                                                   Token);
@@ -163,8 +163,12 @@ namespace TwitchLib.Communication.Clients
         protected override System.Net.Sockets.TcpClient CreateClient()
         {
             Logger?.TraceMethodCall(GetType());
-            
-            return new System.Net.Sockets.TcpClient();
+
+            return new System.Net.Sockets.TcpClient
+            {
+                // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient.lingerstate?view=netstandard-2.0#remarks
+                LingerState = new System.Net.Sockets.LingerOption(true, 0)
+            };
         }
 
         protected override void CloseClient()

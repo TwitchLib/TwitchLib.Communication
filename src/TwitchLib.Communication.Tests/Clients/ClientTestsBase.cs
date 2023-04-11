@@ -182,7 +182,6 @@ namespace TwitchLib.Communication.Tests.Clients
                         client.OnMessage += (sender, e) =>
                         {
                             Assert.NotNull(e.Message);
-                            string msg = e.Message;
                             Assert.StartsWith("PONG :tmi.twitch.tv", e.Message);
                             pauseReadMessage.Set();
                         };

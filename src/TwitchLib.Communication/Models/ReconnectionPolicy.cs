@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace TwitchLib.Communication.Models
+﻿namespace TwitchLib.Communication.Models
 {
     /// <summary>
     ///     Connection/Reconnection-Policy
@@ -9,7 +7,7 @@ namespace TwitchLib.Communication.Models
     ///     controls the attempts to make to connect and to reconnect to twitch
     ///     <br></br>
     ///     <br></br>
-    ///     to omit reconnects and to only make one attempt to connect to twitch, please use the ctor. <see cref="ReconnectionPolicy(Boolean)"/>
+    ///     to omit reconnects and to only make one attempt to connect to twitch, please use <see cref="NoReconnectionPolicy"/>
     /// </summary>
     public class ReconnectionPolicy
     {
@@ -19,37 +17,6 @@ namespace TwitchLib.Communication.Models
         private readonly int _maxReconnectInterval;
         private int? _maxAttempts;
         private int _attemptsMade;
-
-        public bool OmitReconnect { get; }
-
-        /// <summary>
-        ///     this Constructor can/should be used to omit reconnect-attempts
-        /// </summary>
-        /// <param name="omitReconnect">
-        ///     <see langword="true"/> if the <see cref="Interfaces.IClient"/> should not reconnect
-        ///     <br></br>
-        ///     <br></br>
-        ///     passing <see langword="false"/> to this ctor. throws an <see cref="ArgumentOutOfRangeException"/>
-        ///     <br></br>
-        ///     <br></br>
-        ///     <b>Warning:</b>
-        ///     <br></br>
-        ///     omitting the reconnect, impacts <see cref="Interfaces.IClient.Reconnect"/>
-        ///     <br></br>
-        ///     you have to stay in that workflow <see cref="Interfaces.IClient.Open()"/> -> <see cref="Interfaces.IClient.Close()"/> -> <see cref="Interfaces.IClient.Open()"/>
-        /// </param>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///     if <paramref name="omitReconnect"/> is <see langword="false"/>
-        /// </exception>
-        public ReconnectionPolicy(bool omitReconnect)
-        {
-            if (!omitReconnect)
-                throw new ArgumentOutOfRangeException(nameof(omitReconnect),
-                    "To use this Constructor, the parameters value has to be true!");
-            OmitReconnect = true;
-            _initMaxAttempts = 1;
-            _maxAttempts = 1;
-        }
 
         /// <summary>
         ///     the <see cref="TwitchLib.Communication.Clients.TcpClient"/> or <see cref="TwitchLib.Communication.Clients.WebSocketClient"/>
@@ -65,7 +32,7 @@ namespace TwitchLib.Communication.Models
         ///     <br></br>
         ///     Example:
         ///     <br></br>
-        ///     try to connect -> couldnt connect -> wait 3_000 milliseconds -> try to connect -> couldnt connect -> wait 6_000 milliseconds -> and so on
+        ///     try to connect -> couldn't connect -> wait 3_000 milliseconds -> try to connect -> couldn't connect -> wait 6_000 milliseconds -> and so on
         /// </summary>
         public ReconnectionPolicy()
         {
@@ -184,7 +151,8 @@ namespace TwitchLib.Communication.Models
         /// <param name="maxAttempts">
         ///     <see langword="null"/> means <b>infinite</b>; it never stops to try to reconnect
         /// </param>
-        public ReconnectionPolicy(int reconnectInterval,
+        public ReconnectionPolicy(
+            int reconnectInterval,
             int? maxAttempts)
         {
             _reconnectStepInterval = reconnectInterval;
@@ -224,11 +192,6 @@ namespace TwitchLib.Communication.Models
 
         public bool AreAttemptsComplete()
         {
-            if (_maxAttempts == null)
-            {
-                return false;
-            }
-
             return _attemptsMade == _maxAttempts;
         }
     }

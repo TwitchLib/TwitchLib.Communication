@@ -4,7 +4,7 @@ namespace TwitchLib.Communication.Helpers
 {
     internal static class TaskHelper
     {
-        internal static bool IsTaskRunning(Task task)
+        internal static bool IsTaskRunning(this Task task)
         {
             return task != null
                    && !task.IsFaulted

@@ -15,10 +15,10 @@ namespace TwitchLib.Communication.Clients
     ///     to be able to 
     ///     <list>
     ///         <item>
-    ///             pass instances of this <see langword="class"/> to <see cref="Services.NetworkServices"/> and <see cref="Services.ThrottlerService"/>
+    ///             pass instances of this <see langword="class"/> to <see cref="NetworkServices{T}"/> and <see cref="Services.ThrottlerService"/>
     ///         </item>
     ///         <item>
-    ///             and to access Methods of this instance within <see cref="Services.NetworkServices"/> and <see cref="Services.ThrottlerService"/>
+    ///             and to access Methods of this instance within <see cref="NetworkServices{T}"/> and <see cref="Services.ThrottlerService"/>
     ///         </item>
     ///     </list>
     /// </summary>
@@ -241,7 +241,8 @@ namespace TwitchLib.Communication.Clients
                     Logger?.TraceAction(GetType(), "try to connect");
                     if (!first)
                     {
-                        Task.Delay(Options.ReconnectionPolicy.GetReconnectInterval()).GetAwaiter().GetResult();
+                        Task.Delay(Options.ReconnectionPolicy.GetReconnectInterval(), CancellationToken.None)
+                            .GetAwaiter().GetResult();
                     }
 
                     ConnectClient();
@@ -251,7 +252,7 @@ namespace TwitchLib.Communication.Clients
 
                 if (!IsConnected)
                 {
-                    Logger?.TraceAction(GetType(), "Client couldnt establish a connection");
+                    Logger?.TraceAction(GetType(), "Client couldn't establish a connection");
                     RaiseFatal();
                     return false;
                 }
@@ -268,7 +269,7 @@ namespace TwitchLib.Communication.Clients
             catch (Exception ex)
             {
                 Logger?.LogExceptionAsError(GetType(), ex);
-                RaiseError(new OnErrorEventArgs() { Exception = ex });
+                RaiseError(new OnErrorEventArgs { Exception = ex });
                 RaiseFatal();
                 return false;
             }
@@ -283,7 +284,7 @@ namespace TwitchLib.Communication.Clients
         ///     afterwards it waits for the via <see cref="IClientOptions.DisconnectWait"/> given amount of milliseconds
         ///     <br></br>
         ///     <br></br>
-        ///     <see cref="ConnectionWatchDog"/> will keep running,
+        ///     <see cref="ConnectionWatchDog{T}"/> will keep running,
         ///     because itself issued this call by calling <see cref="ReconnectInternal()"/>
         /// </summary>
         private void ClosePrivate()
@@ -298,20 +299,17 @@ namespace TwitchLib.Communication.Clients
             CloseClient();
             RaiseDisconnected();
             _cancellationTokenSource = new CancellationTokenSource();
-            Task.Delay(TimeSpan.FromMilliseconds(Options.DisconnectWait)).GetAwaiter().GetResult();
+            
+            Task.Delay(TimeSpan.FromMilliseconds(Options.DisconnectWait), CancellationToken.None)
+                .GetAwaiter().GetResult();
         }
 
         /// <summary>
-        ///     specific client send method
+        ///     Send method for the client.
         /// </summary>
         /// <param name="message">
-        ///     IRC-Messsage
+        ///     Message to be send
         /// </param>
-        /// <returns>
-        ///     <see langword="true"/>, if the message should be sent
-        ///     <br></br>
-        ///     <see langword="false"/> otherwise
-        /// </returns>
         protected abstract void ClientSend(string message);
 
         /// <summary>
@@ -336,19 +334,16 @@ namespace TwitchLib.Communication.Clients
         protected abstract void CloseClient();
 
         /// <summary>
-        ///     Connect client.
+        ///     Connect the client.
         /// </summary>
         protected abstract void ConnectClient();
         
         /// <summary>
-        ///     to issue a reconnect
+        ///     To issue a reconnect
         ///     <br></br>
+        ///     especially for the <see cref="ConnectionWatchDog{T}"/>
         ///     <br></br>
-        ///     especially for the <see cref="ConnectionWatchDog"/>
-        ///     <br></br>
-        ///     <br></br>
-        ///     it stops all <see cref="TwitchLib.Communication.Services.NetworkServices"/> but <see cref="ConnectionWatchDog"/>!
-        ///     <br></br>
+        ///     it stops all <see cref="NetworkServices{T}"/> but <see cref="ConnectionWatchDog{T}"/>!
         ///     <br></br>
         ///     <br></br>
         ///     see also <seealso cref="Open()"/>:
@@ -362,7 +357,7 @@ namespace TwitchLib.Communication.Clients
         {
             Logger?.TraceMethodCall(GetType());
             ClosePrivate();
-            bool reconnected = OpenPrivate(true);
+            var reconnected = OpenPrivate(true);
             if (reconnected)
             {
                 RaiseReconnected();
@@ -373,7 +368,7 @@ namespace TwitchLib.Communication.Clients
 
         /// <summary>
         ///     just the Action that listens for new Messages
-        ///     the corresponding <see cref="Task"/> is held by <see cref="Services.NetworkServices"/>
+        ///     the corresponding <see cref="Task"/> is held by <see cref="NetworkServices{T}"/>
         /// </summary>
         internal abstract void ListenTaskAction();
     }

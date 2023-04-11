@@ -84,7 +84,7 @@ namespace TwitchLib.Communication.Services
                         // ReconnectInternal() calls the correct Close-Method within the Client
                         // ReconnectInternal() makes attempts to reconnect according to the ReconnectionPolicy within the IClientOptions
                         _logger?.TraceAction(GetType(), "Try to reconnect");
-                        bool connected = _client.ReconnectInternal();
+                        var connected = _client.ReconnectInternal();
                         if (!connected)
                         {
                             _logger?.TraceAction(GetType(), "Client couldn't reconnect");

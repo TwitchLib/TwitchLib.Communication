@@ -13,7 +13,6 @@ namespace TwitchLib.Communication.Services
     /// </summary>
     internal class NetworkServices<T> where T : IDisposable
     {
-        // Each Task is held in its own variable to be more precise
         private Task _listenTask;
         private Task _monitorTask;
         private readonly ClientBase<T> _client;
@@ -34,7 +33,7 @@ namespace TwitchLib.Communication.Services
         internal void Start()
         {
             _logger?.TraceMethodCall(GetType());
-            if (_monitorTask == null || !TaskHelper.IsTaskRunning(_monitorTask))
+            if (_monitorTask == null || !_monitorTask.IsTaskRunning())
             {
                 // this task is probably still running
                 // may be in case of a network connection loss

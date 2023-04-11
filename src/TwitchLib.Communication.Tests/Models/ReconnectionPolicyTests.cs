@@ -7,46 +7,7 @@ namespace TwitchLib.Communication.Tests.Models
     public class ReconnectionPolicyTests
     {
         /// <summary>
-        ///     checks <see cref="ClientOptions.ReconnectionPolicy"/>
-        ///     <br></br>
-        ///     <see cref="ReconnectionPolicy.ReconnectionPolicy(Boolean)"/> = <see langword="false"/>
-        /// </summary>
-        [Fact]
-        public void ReconnectionPolicy_Throws_ArgumentOutOfRangeException_YES()
-        {
-            try
-            {
-                _ = new ReconnectionPolicy(false);
-                Assert.Fail($"{nameof(ArgumentOutOfRangeException)} expected.");
-            }
-            catch (Exception e)
-            {
-                Assert.NotNull(e);
-                Assert.IsType<ArgumentOutOfRangeException>(e);
-            }
-        }
-
-        /// <summary>
-        ///     checks <see cref="ClientOptions.ReconnectionPolicy"/>
-        ///     <br></br>
-        ///     <see cref="ReconnectionPolicy.ReconnectionPolicy(Boolean)"/> = <see langword="true"/>
-        /// </summary>
-        [Fact]
-        public void ReconnectionPolicy_Throws_ArgumentOutOfRangeException_NO()
-        {
-            try
-            {
-                ReconnectionPolicy reconnectionPolicy = new ReconnectionPolicy(true);
-                Assert.True(reconnectionPolicy.OmitReconnect);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.ToString());
-            }
-        }
-
-        /// <summary>
-        ///     checks <see cref="ClientOptions.ReconnectionPolicy"/>
+        ///     Checks <see cref="ClientOptions.ReconnectionPolicy"/>
         ///     <br></br>
         ///     <see cref="ReconnectionPolicy.AreAttemptsComplete"/>
         ///     <br></br>
@@ -57,8 +18,7 @@ namespace TwitchLib.Communication.Tests.Models
         {
             try
             {
-                ReconnectionPolicy reconnectionPolicy = new ReconnectionPolicy(true);
-                Assert.True(reconnectionPolicy.OmitReconnect);
+                ReconnectionPolicy reconnectionPolicy = new NoReconnectionPolicy();
                 Assert.False(reconnectionPolicy.AreAttemptsComplete());
                 reconnectionPolicy.ProcessValues();
                 Assert.True(reconnectionPolicy.AreAttemptsComplete());

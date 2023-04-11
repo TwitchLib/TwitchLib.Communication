@@ -19,8 +19,10 @@ namespace TwitchLib.Communication.Clients
 
         public override bool IsConnected => Client?.Connected ?? false;
 
-        public TcpClient(IClientOptions options = null,
-            ILogger logger = null) : base(options, logger)
+        public TcpClient(
+            IClientOptions options = null,
+            ILogger logger = null) 
+            : base(options, logger)
         {
         }
 
@@ -39,7 +41,7 @@ namespace TwitchLib.Communication.Clients
             {
                 try
                 {
-                    string input = Reader.ReadLine();
+                    var input = Reader.ReadLine();
                     if (input is null)
                     {
                         continue;
@@ -101,36 +103,31 @@ namespace TwitchLib.Communication.Clients
             // the following answer
             // NET6_0_OR_GREATER: https://stackoverflow.com/a/68998339
 
-            Task connectTask = Client.ConnectAsync(Url,
+            var connectTask = Client.ConnectAsync(Url,
                                                    Port);
-            Task waitTask = connectTask.WaitAsync(TimeOutEstablishConnection,
+            var waitTask = connectTask.WaitAsync(TimeOutEstablishConnection,
                                                   Token);
-            // GetAwaiter().GetResult() to avoid async in method-signature 'protected override void SpecificClientConnect()';
-            waitTask.GetAwaiter().GetResult();
+            Task.WhenAny(connectTask, waitTask).GetAwaiter().GetResult();
 #else
                 // within the following thread:
                 // https://stackoverflow.com/questions/4238345/asynchronously-wait-for-taskt-to-complete-with-timeout
                 // the following two answers:
                 // https://stackoverflow.com/a/11191070
                 // https://stackoverflow.com/a/22078975
-
-                // avoid deletion of using-decleration through code-cleanups/save-actions
-                // by using the fully qualified name
-                using (System.Threading.CancellationTokenSource delayTaskCancellationTokenSource =
-                       new System.Threading.CancellationTokenSource())
+                
+                using (var delayTaskCancellationTokenSource = new System.Threading.CancellationTokenSource())
                 {
-                    Task connectTask = Client.ConnectAsync(Url, Port);
-                    Task delayTask = Task.Delay((int)TimeOutEstablishConnection.TotalMilliseconds,
+                    var connectTask = Client.ConnectAsync(Url, Port);
+                    var delayTask = Task.Delay((int)TimeOutEstablishConnection.TotalMilliseconds,
                         delayTaskCancellationTokenSource.Token);
-                    Task<Task> task = Task.WhenAny(connectTask, delayTask);
-                    // though 'theTaskThatCompletedFirst' is unused, just to be precise...
-                    Task theTaskThatCompletedFirst = task.GetAwaiter().GetResult();
+                    
+                    Task.WhenAny(connectTask, delayTask).GetAwaiter().GetResult();
                     delayTaskCancellationTokenSource?.Cancel();
                 }
 #endif
                 if (!Client.Connected)
                 {
-                    Logger?.TraceAction(GetType(), "Client couldnt establish connection");
+                    Logger?.TraceAction(GetType(), "Client couldn't establish connection");
                     return;
                 }
 
@@ -151,7 +148,7 @@ namespace TwitchLib.Communication.Clients
             catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
                                        ex.GetType() == typeof(OperationCanceledException))
             {
-                // occurs if the Tasks are canceled by the CancelationTokenSource.Token
+                // occurs if the Tasks are canceled by the CancellationTokenSource.Token
                 Logger?.LogExceptionAsInformation(GetType(), ex);
             }
             catch (Exception ex)

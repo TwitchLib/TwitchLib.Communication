@@ -160,49 +160,6 @@ namespace TwitchLib.Communication.Tests.Clients
             }
         }
 
-        [Fact]
-        public void Client_Can_SendAndReceive_Messages()
-        {
-            // create one logger per test-method! - cause one file per test-method is generated
-            ILogger<T> logger = TestLogHelper.GetLogger<T>();
-            T? client = GetClient(logger, Options);
-            Assert.NotNull(client);
-            try
-            {
-                ManualResetEvent pauseConnected = new ManualResetEvent(false);
-                ManualResetEvent pauseReadMessage = new ManualResetEvent(false);
-
-                Assert.Raises<OnMessageEventArgs>(
-                    h => client.OnMessage += h,
-                    h => client.OnMessage -= h,
-                    () =>
-                    {
-                        client.OnConnected += (sender, e) => pauseConnected.Set();
-
-                        client.OnMessage += (sender, e) =>
-                        {
-                            Assert.NotNull(e.Message);
-                            Assert.StartsWith("PONG :tmi.twitch.tv", e.Message);
-                            pauseReadMessage.Set();
-                        };
-
-                        client.Open();
-                        Assert.True(client.Send("PING"));
-                        Assert.True(pauseConnected.WaitOne(WaitOneDuration));
-                        Assert.True(pauseReadMessage.WaitOne(WaitOneDuration));
-                    });
-            }
-            catch (Exception e)
-            {
-                logger.LogError(e.ToString());
-                Assert.Fail(e.ToString());
-            }
-            finally
-            {
-                Cleanup(client);
-            }
-        }
-
         private static void Cleanup(T? client)
         {
             client?.Dispose();

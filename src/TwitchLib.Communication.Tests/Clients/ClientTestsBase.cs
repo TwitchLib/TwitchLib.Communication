@@ -9,6 +9,7 @@ using TwitchLib.Communication.Models;
 using TwitchLib.Communication.Tests.Helpers;
 using Xunit;
 
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 namespace TwitchLib.Communication.Tests.Clients
 {
     /// <summary>
@@ -24,33 +25,33 @@ namespace TwitchLib.Communication.Tests.Clients
     /// </typeparam>
     public abstract class ClientTestsBase<T> where T : IClient
     {
-        private static uint WaitAfterDispose => 3;
         private static TimeSpan WaitOneDuration => TimeSpan.FromSeconds(5);
-        private static IClientOptions Options;
+        private readonly IClientOptions? _options;
 
-        public ClientTestsBase(IClientOptions options = null)
+        protected ClientTestsBase(IClientOptions? options = null)
         {
-            Options = options;
+            _options = options;
         }
         
         [Fact]
-        public void Client_Raises_OnConnected_EventArgs()
+        public async Task Client_Raises_OnConnected_EventArgs()
         {
             // create one logger per test-method! - cause one file per test-method is generated
-            ILogger<T> logger = TestLogHelper.GetLogger<T>();
-            T? client = GetClient(logger, Options);
+            var logger = TestLogHelper.GetLogger<T>();
+            var client = GetClient(logger, _options);
             Assert.NotNull(client);
             try
             {
-                ManualResetEvent pauseConnected = new ManualResetEvent(false);
+                var pauseConnected = new ManualResetEvent(false);
 
-                Assert.Raises<OnConnectedEventArgs>(
+                await Assert.RaisesAsync<OnConnectedEventArgs>(
                     h => client.OnConnected += h,
                     h => client.OnConnected -= h,
-                    () =>
+                    async () =>
                     {
                         client.OnConnected += (sender, e) => pauseConnected.Set();
-                        client.Open();
+                        await client.OpenAsync();
+                        
                         Assert.True(pauseConnected.WaitOne(WaitOneDuration));
                     });
             }
@@ -61,33 +62,34 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                Cleanup(client);
+                client.Dispose();
             }
         }
 
         [Fact]
-        public void Client_Raises_OnDisconnected_EventArgs()
+        public async Task Client_Raises_OnDisconnected_EventArgs()
         {
             // create one logger per test-method! - cause one file per test-method is generated
-            ILogger<T> logger = TestLogHelper.GetLogger<T>();
-            T? client = GetClient(logger, Options);
+            var logger = TestLogHelper.GetLogger<T>();
+            var client = GetClient(logger, _options);
             Assert.NotNull(client);
             try
             {
-                ManualResetEvent pauseDisconnected = new ManualResetEvent(false);
+                var pauseDisconnected = new ManualResetEvent(false);
 
-                Assert.Raises<OnDisconnectedEventArgs>(
+                await Assert.RaisesAsync<OnDisconnectedEventArgs>(
                     h => client.OnDisconnected += h,
                     h => client.OnDisconnected -= h,
-                    () =>
+                    async () =>
                     {
-                        client.OnConnected += (sender, e) =>
+                        client.OnConnected += async (sender, e) =>
                         {
-                            Task.Delay(WaitOneDuration).GetAwaiter().GetResult();
-                            client.Close();
+                            await client.CloseAsync();
                         };
+                        
                         client.OnDisconnected += (sender, e) => pauseDisconnected.Set();
-                        client.Open();
+                        await client.OpenAsync();
+                        
                         Assert.True(pauseDisconnected.WaitOne(WaitOneDuration));
                     });
             }
@@ -98,30 +100,30 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                Cleanup(client);
+                client.Dispose();
             }
         }
 
         [Fact]
-        public void Client_Raises_OnReconnected_EventArgs()
+        public async Task Client_Raises_OnReconnected_EventArgs()
         {
             // create one logger per test-method! - cause one file per test-method is generated
-            ILogger<T> logger = TestLogHelper.GetLogger<T>();
-            T? client = GetClient(logger, Options);
+            var logger = TestLogHelper.GetLogger<T>();
+            var client = GetClient(logger, _options);
             Assert.NotNull(client);
             try
             {
-                ManualResetEvent pauseReconnected = new ManualResetEvent(false);
+                var pauseReconnected = new ManualResetEvent(false);
 
-                Assert.Raises<OnConnectedEventArgs>(
+                await Assert.RaisesAsync<OnConnectedEventArgs>(
                     h => client.OnReconnected += h,
                     h => client.OnReconnected -= h,
-                    () =>
+                    async () =>
                     {
-                        client.OnConnected += (s, e) => client.Reconnect();
+                        client.OnConnected += async (s, e) => await client.ReconnectAsync();
 
                         client.OnReconnected += (s, e) => pauseReconnected.Set();
-                        client.Open();
+                        await client.OpenAsync();
 
                         Assert.True(pauseReconnected.WaitOne(WaitOneDuration));
                     });
@@ -133,7 +135,7 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                Cleanup(client);
+                client.Dispose();
             }
         }
 
@@ -141,11 +143,11 @@ namespace TwitchLib.Communication.Tests.Clients
         public void Dispose_Client_Before_Connecting_IsOK()
         {
             // create one logger per test-method! - cause one file per test-method is generated
-            ILogger<T> logger = TestLogHelper.GetLogger<T>();
+            var logger = TestLogHelper.GetLogger<T>();
             IClient? client = null;
             try
             {
-                client = GetClient(logger, Options);
+                client = GetClient(logger, _options);
                 Assert.NotNull(client);
                 client.Dispose();
             }
@@ -156,29 +158,25 @@ namespace TwitchLib.Communication.Tests.Clients
             }
             finally
             {
-                Cleanup((T?)client);
+                client?.Dispose();
             }
-        }
-
-        private static void Cleanup(T? client)
-        {
-            client?.Dispose();
-            Task.Delay(TimeSpan.FromSeconds(WaitAfterDispose)).GetAwaiter().GetResult();
         }
 
         private static TClient? GetClient<TClient>(ILogger<TClient> logger, IClientOptions? options = null)
         {
-            Type[] constructorParameterTypes = new Type[]
+            var constructorParameterTypes = new Type[]
             {
                 typeof(IClientOptions),
                 typeof(ILogger<TClient>)
             };
-            ConstructorInfo? constructor = typeof(TClient).GetConstructor(constructorParameterTypes);
-            object[] constructorParameters = new object[]
+            
+            var constructor = typeof(TClient).GetConstructor(constructorParameterTypes);
+            var constructorParameters = new object[]
             {
                 options ?? new ClientOptions(),
                 logger
             };
+            
             return (TClient?)constructor?.Invoke(constructorParameters);
         }
     }

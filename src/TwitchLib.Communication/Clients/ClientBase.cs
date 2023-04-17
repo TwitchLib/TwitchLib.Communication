@@ -22,9 +22,10 @@ namespace TwitchLib.Communication.Clients
     ///         </item>
     ///     </list>
     /// </summary>
-    public abstract class ClientBase<T> : IClient where T : IDisposable
+    public abstract class ClientBase<T> : IClient
+        where T : IDisposable
     {
-        private static readonly object Lock = new object();
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private readonly NetworkServices<T> _networkServices;
         private CancellationTokenSource _cancellationTokenSource;
         
@@ -126,7 +127,7 @@ namespace TwitchLib.Communication.Clients
         /// <summary>
         ///     Wont raise the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
-        internal void RaiseFatal(Exception e = null)
+        internal void RaiseFatal(Exception ex = null)
         {
             Logger?.TraceMethodCall(GetType());
             if (Token.IsCancellationRequested)
@@ -135,9 +136,9 @@ namespace TwitchLib.Communication.Clients
             }
 
             var onFatalErrorEventArgs = new OnFatalErrorEventArgs("Fatal network error.");
-            if (e != null)
+            if (ex != null)
             {
-                onFatalErrorEventArgs = new OnFatalErrorEventArgs(e);
+                onFatalErrorEventArgs = new OnFatalErrorEventArgs(ex);
             }
 
             OnFatality?.Invoke(this, onFatalErrorEventArgs);
@@ -155,67 +156,68 @@ namespace TwitchLib.Communication.Clients
             OnConnected?.Invoke(this, new OnConnectedEventArgs());
         }
 
-        public bool Send(string message)
+        public async Task<bool> SendAsync(string message)
         {
             Logger?.TraceMethodCall(GetType());
+
+            await _semaphore.WaitAsync(Token);
             try
             {
-                lock (Lock)
-                {
-                    ClientSend(message);
-                    return true;
-                }
+                await ClientSendAsync(message);
+                return true;
             }
             catch (Exception e)
             {
-                RaiseSendFailed(new OnSendFailedEventArgs() { Exception = e, Data = message });
+                RaiseSendFailed(new OnSendFailedEventArgs { Exception = e, Data = message });
                 return false;
+            }
+            finally
+            {
+                _semaphore.Release();
             }
         }
 
-        public bool Open()
+        public Task<bool> OpenAsync()
         {
             Logger?.TraceMethodCall(GetType());
-            return OpenPrivate(false);
+            return OpenPrivateAsync(false);
         }
 
-        public void Close()
+        public async Task CloseAsync()
         {
             Logger?.TraceMethodCall(GetType());
             
             // Network services has to be stopped first so that it wont reconnect
-            _networkServices.Stop();
+            await _networkServices.StopAsync();
             
             // ClosePrivate() also handles IClientOptions.DisconnectWait
-            ClosePrivate();
+            await ClosePrivateAsync();
         }
 
         /// <summary>
-        ///     <inheritdoc cref="Close"/>
+        ///     <inheritdoc cref="CloseAsync"/>
         /// </summary>
         public void Dispose()
         {
             Logger?.TraceMethodCall(GetType());
-            Close();
+            CloseAsync().GetAwaiter().GetResult();
             GC.SuppressFinalize(this);
         }
 
-        public bool Reconnect()
+        public async Task<bool> ReconnectAsync()
         {
             Logger?.TraceMethodCall(GetType());
             
             // Stops everything (including NetworkServices)
             if (IsConnected)
             {
-                Close();
+                await CloseAsync();
             }
 
-            // interface IClient doesnt declare a return value for Reconnect()
-            // so we can suppress IDE0058 of ReconnectInternal()
-            return ReconnectInternal();
+            return await ReconnectInternalAsync();
         }
 
-        private bool OpenPrivate(bool isReconnect)
+        private async Task<bool> OpenPrivateAsync(bool isReconnect)
         {
             Logger?.TraceMethodCall(GetType());
             try
@@ -235,17 +237,17 @@ namespace TwitchLib.Communication.Clients
                 
                 var first = true;
                 Options.ReconnectionPolicy.Reset(isReconnect);
-                while (!IsConnected
-                       && !Options.ReconnectionPolicy.AreAttemptsComplete())
+                
+                while (!IsConnected &&
+                       !Options.ReconnectionPolicy.AreAttemptsComplete())
                 {
                     Logger?.TraceAction(GetType(), "try to connect");
                     if (!first)
                     {
-                        Task.Delay(Options.ReconnectionPolicy.GetReconnectInterval(), CancellationToken.None)
-                            .GetAwaiter().GetResult();
+                        await Task.Delay(Options.ReconnectionPolicy.GetReconnectInterval(), CancellationToken.None);
                     }
 
-                    ConnectClient();
+                    await ConnectClientAsync();
                     Options.ReconnectionPolicy.ProcessValues();
                     first = false;
                 }
@@ -259,6 +261,7 @@ namespace TwitchLib.Communication.Clients
 
                 Logger?.TraceAction(GetType(), "Client established a connection");
                 _networkServices.Start();
+                
                 if (!isReconnect)
                 {
                     RaiseConnected();
@@ -276,7 +279,7 @@ namespace TwitchLib.Communication.Clients
         }
 
         /// <summary>
-        ///     Stops <see cref="_networkServices.ListenTask"/>
+        ///     Stops <see cref="_networkServices.ListenTaskAsync"/>
         ///     by calling <see cref="_cancellationTokenSource.Cancel()"/>
         ///     <br></br>
         ///     and enforces the <see cref="CloseClient"/>
@@ -285,9 +288,9 @@ namespace TwitchLib.Communication.Clients
         ///     <br></br>
         ///     <br></br>
         ///     <see cref="ConnectionWatchDog{T}"/> will keep running,
-        ///     because itself issued this call by calling <see cref="ReconnectInternal()"/>
+        ///     because itself issued this call by calling <see cref="ReconnectInternalAsync()"/>
         /// </summary>
-        private void ClosePrivate()
+        private async Task ClosePrivateAsync()
         {
             Logger?.TraceMethodCall(GetType());
             
@@ -299,9 +302,8 @@ namespace TwitchLib.Communication.Clients
             CloseClient();
             RaiseDisconnected();
             _cancellationTokenSource = new CancellationTokenSource();
-            
-            Task.Delay(TimeSpan.FromMilliseconds(Options.DisconnectWait), CancellationToken.None)
-                .GetAwaiter().GetResult();
+
+            await Task.Delay(TimeSpan.FromMilliseconds(Options.DisconnectWait), CancellationToken.None);
         }
 
         /// <summary>
@@ -310,7 +312,7 @@ namespace TwitchLib.Communication.Clients
         /// <param name="message">
         ///     Message to be send
         /// </param>
-        protected abstract void ClientSend(string message);
+        protected abstract Task ClientSendAsync(string message);
 
         /// <summary>
         ///     Instantiate the underlying client.
@@ -336,7 +338,7 @@ namespace TwitchLib.Communication.Clients
         /// <summary>
         ///     Connect the client.
         /// </summary>
-        protected abstract void ConnectClient();
+        protected abstract Task ConnectClientAsync();
         
         /// <summary>
         ///     To issue a reconnect
@@ -353,11 +355,11 @@ namespace TwitchLib.Communication.Clients
         /// <returns>
         ///     <see langword="true"/> if a connection could be established, <see langword="false"/> otherwise
         /// </returns>
-        internal bool ReconnectInternal()
+        internal async Task<bool> ReconnectInternalAsync()
         {
             Logger?.TraceMethodCall(GetType());
-            ClosePrivate();
-            var reconnected = OpenPrivate(true);
+            await ClosePrivateAsync();
+            var reconnected = await OpenPrivateAsync(true);
             if (reconnected)
             {
                 RaiseReconnected();
@@ -370,6 +372,6 @@ namespace TwitchLib.Communication.Clients
         ///     just the Action that listens for new Messages
         ///     the corresponding <see cref="Task"/> is held by <see cref="NetworkServices{T}"/>
         /// </summary>
-        internal abstract void ListenTaskAction();
+        internal abstract Task ListenTaskActionAsync();
     }
 }

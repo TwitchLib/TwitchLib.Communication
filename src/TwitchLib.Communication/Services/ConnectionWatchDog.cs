@@ -22,7 +22,7 @@ namespace TwitchLib.Communication.Services
         ///             should only be set to a new instance in <see cref="StartMonitorTask()"/>
         ///         </item>
         ///         <item>
-        ///             should only be set to <see langword="null"/> in <see cref="Stop()"/>
+        ///             should only be set to <see langword="null"/> in <see cref="StopAsync()"/>
         ///         </item>
         ///     </list>
         /// </summary>
@@ -38,7 +38,7 @@ namespace TwitchLib.Communication.Services
             _client = client;
         }
 
-        internal Task StartMonitorTask()
+        internal Task StartMonitorTaskAsync()
         {
             _logger?.TraceMethodCall(GetType());
             // We dont want to start more than one WatchDog
@@ -52,27 +52,28 @@ namespace TwitchLib.Communication.Services
             // This should be the only place where a new instance of CancellationTokenSource is set
             _cancellationTokenSource = new CancellationTokenSource();
 
-            return Task.Run(MonitorTaskAction, _cancellationTokenSource.Token);
+            return Task.Run(MonitorTaskActionAsync, _cancellationTokenSource.Token);
         }
 
-        internal void Stop()
+        internal async Task StopAsync()
         {
             _logger?.TraceMethodCall(GetType());
             _cancellationTokenSource?.Cancel();
             // give MonitorTaskAction a chance to catch cancellation
             // otherwise it may result in an Exception
-            Task.Delay(MonitorTaskDelayInMilliseconds * 2).GetAwaiter().GetResult();
+            await Task.Delay(MonitorTaskDelayInMilliseconds * 2);
             _cancellationTokenSource?.Dispose();
             // set it to null for the check within this.StartMonitorTask()
             _cancellationTokenSource = null;
         }
 
-        private void MonitorTaskAction()
+        private async Task MonitorTaskActionAsync()
         {
             _logger?.TraceMethodCall(GetType());
             try
             {
-                while (_cancellationTokenSource != null && !_cancellationTokenSource.Token.IsCancellationRequested)
+                while (_cancellationTokenSource != null && 
+                       !_cancellationTokenSource.Token.IsCancellationRequested)
                 {
                     // we expect the client is connected,
                     // when this monitor task starts
@@ -84,7 +85,8 @@ namespace TwitchLib.Communication.Services
                         // ReconnectInternal() calls the correct Close-Method within the Client
                         // ReconnectInternal() makes attempts to reconnect according to the ReconnectionPolicy within the IClientOptions
                         _logger?.TraceAction(GetType(), "Try to reconnect");
-                        var connected = _client.ReconnectInternal();
+                        
+                        var connected = await _client.ReconnectInternalAsync();
                         if (!connected)
                         {
                             _logger?.TraceAction(GetType(), "Client couldn't reconnect");
@@ -92,14 +94,14 @@ namespace TwitchLib.Communication.Services
                             // and no connection could be established
                             // a call to Client.Close() is made
                             // that public Close() also shuts down this ConnectionWatchDog
-                            _client.Close();
+                            await _client.CloseAsync();
                             break;
                         }
 
                         _logger?.TraceAction(GetType(), "Client reconnected");
                     }
 
-                    Task.Delay(MonitorTaskDelayInMilliseconds).GetAwaiter().GetResult();
+                    await Task.Delay(MonitorTaskDelayInMilliseconds);
                 }
             }
             catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
@@ -115,7 +117,7 @@ namespace TwitchLib.Communication.Services
                 _client.RaiseFatal();
 
                 // To ensure CancellationTokenSource is set to null again call Stop();
-                Stop();
+                await StopAsync();
             }
         }
     }

@@ -31,31 +31,31 @@ namespace TwitchLib.Communication.Clients
                     Url = Options.UseSsl ? "wss://pubsub-edge.twitch.tv:443" : "ws://pubsub-edge.twitch.tv:80";
                     break;
                 default:
-                    Exception ex = new ArgumentOutOfRangeException(nameof(Options.ClientType));
+                    var ex = new ArgumentOutOfRangeException(nameof(Options.ClientType));
                     Logger?.LogExceptionAsError(GetType(), ex);
                     throw ex;
             }
         }
 
-        internal override void ListenTaskAction()
+        internal override async Task ListenTaskActionAsync()
         {
             Logger?.TraceMethodCall(GetType());
             if (Client == null)
             {
-                Exception ex = new InvalidOperationException($"{nameof(Client)} was null!");
+                var ex = new InvalidOperationException($"{nameof(Client)} was null!");
                 Logger?.LogExceptionAsError(GetType(), ex);
                 RaiseFatal(ex);
                 throw ex;
             }
 
-            var message = "";
+            var message = string.Empty;
             while (IsConnected)
             {
                 WebSocketReceiveResult result;
                 var buffer = new byte[1024];
                 try
                 {
-                    result = Client.ReceiveAsync(new ArraySegment<byte>(buffer), Token).GetAwaiter().GetResult();
+                    result = await Client.ReceiveAsync(new ArraySegment<byte>(buffer), Token);
                     if (result == null)
                     {
                         continue;
@@ -78,7 +78,7 @@ namespace TwitchLib.Communication.Clients
                 switch (result.MessageType)
                 {
                     case WebSocketMessageType.Close:
-                        Close();
+                        await CloseAsync();
                         break;
                     case WebSocketMessageType.Text when !result.EndOfMessage:
                         message += Encoding.UTF8.GetString(buffer).TrimEnd('\0');
@@ -99,11 +99,11 @@ namespace TwitchLib.Communication.Clients
                 }
 
                 // clear/reset message
-                message = "";
+                message = string.Empty;
             }
         }
 
-        protected override void ClientSend(string message)
+        protected override async Task ClientSendAsync(string message)
         {
             Logger?.TraceMethodCall(GetType());
 
@@ -118,26 +118,25 @@ namespace TwitchLib.Communication.Clients
             // https://github.com/dotnet/corefx/blob/d6b11250b5113664dd3701c25bdf9addfacae9cc/src/Common/src/System/Net/WebSockets/ManagedWebSocket.cs#L22-L28
             if (Client == null)
             {
-                Exception ex = new InvalidOperationException($"{nameof(Client)} was null!");
+                var ex = new InvalidOperationException($"{nameof(Client)} was null!");
                 Logger?.LogExceptionAsError(GetType(), ex);
                 RaiseFatal(ex);
                 throw ex;
             }
 
             var bytes = Encoding.UTF8.GetBytes(message);
-            var sendTask = Client.SendAsync(new ArraySegment<byte>(bytes),
+            await Client.SendAsync(new ArraySegment<byte>(bytes),
                 WebSocketMessageType.Text,
                 true,
                 Token);
-            sendTask.GetAwaiter().GetResult();
         }
 
-        protected override void ConnectClient()
+        protected override async Task ConnectClientAsync()
         {
             Logger?.TraceMethodCall(GetType());
             if (Client == null)
             {
-                Exception ex = new InvalidOperationException($"{nameof(Client)} was null!");
+                var ex = new InvalidOperationException($"{nameof(Client)} was null!");
                 Logger?.LogExceptionAsError(GetType(), ex);
                 RaiseFatal(ex);
                 throw ex;
@@ -153,8 +152,7 @@ namespace TwitchLib.Communication.Clients
             // NET6_0_OR_GREATER: https://stackoverflow.com/a/68998339
             var connectTask = Client.ConnectAsync(new Uri(Url), Token);
             var waitTask = connectTask.WaitAsync(TimeOutEstablishConnection, Token);
-            // GetAwaiter().GetResult() to avoid async in method-signature 'protected override void SpecificClientConnect()';
-            Task.WhenAny(connectTask, waitTask).GetAwaiter().GetResult();
+            await Task.WhenAny(connectTask, waitTask);
 #else
                 // within the following thread:
                 // https://stackoverflow.com/questions/4238345/asynchronously-wait-for-taskt-to-complete-with-timeout
@@ -164,12 +162,12 @@ namespace TwitchLib.Communication.Clients
                 
                 using (var delayTaskCancellationTokenSource = new CancellationTokenSource())
                 {
-                    var connectTask = Client.ConnectAsync(new Uri(Url),
-                        Token);
-                    var delayTask = Task.Delay((int)TimeOutEstablishConnection.TotalMilliseconds,
+                    var connectTask = Client.ConnectAsync(new Uri(Url), Token);
+                    var delayTask = Task.Delay(
+                        (int)TimeOutEstablishConnection.TotalMilliseconds,
                         delayTaskCancellationTokenSource.Token);
-                    
-                    Task.WhenAny(connectTask, delayTask).GetAwaiter().GetResult();
+
+                    await Task.WhenAny(connectTask, delayTask);
                     delayTaskCancellationTokenSource.Cancel();
                 }
 #endif

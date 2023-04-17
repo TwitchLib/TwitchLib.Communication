@@ -38,17 +38,19 @@ namespace TwitchLib.Communication.Services
                 // this task is probably still running
                 // may be in case of a network connection loss
                 // all other Tasks haven't been started or have been canceled!
-                // ConnectionWatchDog is the only one, that has a seperate CancellationTokenSource!
-                _monitorTask = _connectionWatchDog.StartMonitorTask();
+                // ConnectionWatchDog is the only one, that has a separate CancellationTokenSource!
+                
+                // Let those tasks run in the background, do not await them
+                _monitorTask = _connectionWatchDog.StartMonitorTaskAsync();
             }
 
-            _listenTask = Task.Run(_client.ListenTaskAction, Token);
+            _listenTask = Task.Run(_client.ListenTaskActionAsync, Token);
         }
 
-        internal void Stop()
+        internal async Task StopAsync()
         {
             _logger?.TraceMethodCall(GetType());
-            _connectionWatchDog.Stop();
+            await _connectionWatchDog.StopAsync();
         }
     }
 }

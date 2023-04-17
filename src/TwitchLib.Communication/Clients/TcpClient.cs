@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net.Security;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using TwitchLib.Communication.Events;
@@ -11,11 +12,12 @@ namespace TwitchLib.Communication.Clients
 {
     public class TcpClient : ClientBase<System.Net.Sockets.TcpClient>
     {
+        private StreamReader _reader;
+        private StreamWriter _writer;
+        
         protected override string Url => "irc.chat.twitch.tv";
 
         private int Port => Options.UseSsl ? 6697 : 6667;
-        private StreamReader Reader { get; set; }
-        private StreamWriter Writer { get; set; }
 
         public override bool IsConnected => Client?.Connected ?? false;
 
@@ -26,12 +28,12 @@ namespace TwitchLib.Communication.Clients
         {
         }
 
-        internal override void ListenTaskAction()
+        internal override async Task ListenTaskActionAsync()
         {
             Logger?.TraceMethodCall(GetType());
-            if (Reader == null)
+            if (_reader == null)
             {
-                Exception ex = new InvalidOperationException($"{nameof(Reader)} was null!");
+                var ex = new InvalidOperationException($"{nameof(_reader)} was null!");
                 Logger?.LogExceptionAsError(GetType(), ex);
                 RaiseFatal(ex);
                 throw ex;
@@ -41,7 +43,7 @@ namespace TwitchLib.Communication.Clients
             {
                 try
                 {
-                    var input = Reader.ReadLine();
+                    var input = await _reader.ReadLineAsync();
                     if (input is null)
                     {
                         continue;
@@ -64,7 +66,7 @@ namespace TwitchLib.Communication.Clients
             }
         }
 
-        protected override void ClientSend(string message)
+        protected override async Task ClientSendAsync(string message)
         {
             Logger?.TraceMethodCall(GetType());
 
@@ -72,19 +74,19 @@ namespace TwitchLib.Communication.Clients
             // this method should only be called from 'ClientBase.Send()'
             // where its call gets synchronized/locked
             // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.networkstream?view=netstandard-2.0#remarks
-            if (Writer == null)
+            if (_writer == null)
             {
-                Exception ex = new InvalidOperationException($"{nameof(Writer)} was null!");
+                var ex = new InvalidOperationException($"{nameof(_writer)} was null!");
                 Logger?.LogExceptionAsError(GetType(), ex);
                 RaiseFatal(ex);
                 throw ex;
             }
 
-            Writer.WriteLine(message);
-            Writer.Flush();
+            await _writer.WriteLineAsync(message);
+            await _writer.FlushAsync();
         }
 
-        protected override void ConnectClient()
+        protected override async Task ConnectClientAsync()
         {
             Logger?.TraceMethodCall(GetType());
             if (Client == null)
@@ -103,11 +105,9 @@ namespace TwitchLib.Communication.Clients
             // the following answer
             // NET6_0_OR_GREATER: https://stackoverflow.com/a/68998339
 
-            var connectTask = Client.ConnectAsync(Url,
-                                                   Port);
-            var waitTask = connectTask.WaitAsync(TimeOutEstablishConnection,
-                                                  Token);
-            Task.WhenAny(connectTask, waitTask).GetAwaiter().GetResult();
+            var connectTask = Client.ConnectAsync(Url, Port);
+            var waitTask = connectTask.WaitAsync(TimeOutEstablishConnection, Token);
+            await Task.WhenAny(connectTask, waitTask);
 #else
                 // within the following thread:
                 // https://stackoverflow.com/questions/4238345/asynchronously-wait-for-taskt-to-complete-with-timeout
@@ -115,14 +115,15 @@ namespace TwitchLib.Communication.Clients
                 // https://stackoverflow.com/a/11191070
                 // https://stackoverflow.com/a/22078975
                 
-                using (var delayTaskCancellationTokenSource = new System.Threading.CancellationTokenSource())
+                using (var delayTaskCancellationTokenSource = new CancellationTokenSource())
                 {
                     var connectTask = Client.ConnectAsync(Url, Port);
-                    var delayTask = Task.Delay((int)TimeOutEstablishConnection.TotalMilliseconds,
+                    var delayTask = Task.Delay(
+                        (int)TimeOutEstablishConnection.TotalMilliseconds,
                         delayTaskCancellationTokenSource.Token);
                     
-                    Task.WhenAny(connectTask, delayTask).GetAwaiter().GetResult();
-                    delayTaskCancellationTokenSource?.Cancel();
+                    await Task.WhenAny(connectTask, delayTask);
+                    delayTaskCancellationTokenSource.Cancel();
                 }
 #endif
                 if (!Client.Connected)
@@ -134,15 +135,15 @@ namespace TwitchLib.Communication.Clients
                 Logger?.TraceAction(GetType(), "Client established connection successfully");
                 if (Options.UseSsl)
                 {
-                    SslStream ssl = new SslStream(Client.GetStream(), false);
-                    ssl.AuthenticateAsClient(Url);
-                    Reader = new StreamReader(ssl);
-                    Writer = new StreamWriter(ssl);
+                    var ssl = new SslStream(Client.GetStream(), false);
+                    await ssl.AuthenticateAsClientAsync(Url);
+                    _reader = new StreamReader(ssl);
+                    _writer = new StreamWriter(ssl);
                 }
                 else
                 {
-                    Reader = new StreamReader(Client.GetStream());
-                    Writer = new StreamWriter(Client.GetStream());
+                    _reader = new StreamReader(Client.GetStream());
+                    _writer = new StreamWriter(Client.GetStream());
                 }
             }
             catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
@@ -171,8 +172,8 @@ namespace TwitchLib.Communication.Clients
         protected override void CloseClient()
         {
             Logger?.TraceMethodCall(GetType());
-            Reader?.Dispose();
-            Writer?.Dispose();
+            _reader?.Dispose();
+            _writer?.Dispose();
             Client?.Dispose();
         }
     }

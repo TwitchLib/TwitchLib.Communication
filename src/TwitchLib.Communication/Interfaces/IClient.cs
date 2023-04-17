@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using TwitchLib.Communication.Events;
 
 namespace TwitchLib.Communication.Interfaces
@@ -56,14 +57,14 @@ namespace TwitchLib.Communication.Interfaces
         /// <returns>
         ///     <see langword="true"/> if a connection could be established, <see langword="false"/> otherwise
         /// </returns>
-        bool Open();
+        Task<bool> OpenAsync();
 
         /// <summary>
         ///     if the underlying Client is connected,
         ///     <br></br>
-        ///     <see cref="Close()"/> is invoked
+        ///     <see cref="CloseAsync()"/> is invoked
         ///     <br></br>
-        ///     before it makes a call to <see cref="Open()"/> and <see cref="RaiseConnected()"/>
+        ///     before it makes a call to <see cref="OpenAsync()"/> and <see cref="RaiseConnected()"/>
         ///     <br></br>
         ///     <br></br>
         ///     this Method is also used by 'TwitchLib.Client.TwitchClient' 
@@ -81,25 +82,25 @@ namespace TwitchLib.Communication.Interfaces
         /// <returns>
         ///     <see langword="true"/>, if the client reconnected; <see langword="false"/> otherwise
         /// </returns>
-        bool Reconnect();
+        Task<bool> ReconnectAsync();
 
         /// <summary>
         ///     stops everything
         ///     and waits for the via <see cref="IClientOptions.DisconnectWait"/> given amount of milliseconds
         /// </summary>
-        void Close();
+        Task CloseAsync();
 
         /// <summary>
-        ///     sends the given irc-<paramref name="message"/>
+        ///     Sends the given irc-<paramref name="message"/>
         /// </summary>
         /// <param name="message">
         ///     irc-message to send
         /// </param>
         /// <returns>
-        ///     <see langword="true"/>, if the message should be sent
+        ///     <see langword="true"/>, if the message was sent
         ///     <br></br>
         ///     <see langword="false"/> otherwise
         /// </returns>
-        bool Send(string message);
+        Task<bool> SendAsync(string message);
     }
 }

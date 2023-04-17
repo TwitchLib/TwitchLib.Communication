@@ -9,6 +9,7 @@ using TwitchLib.Communication.Models;
 using TwitchLib.Communication.Tests.Helpers;
 using Xunit;
 
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 namespace TwitchLib.Communication.Tests.Clients
 {
     /// <summary>

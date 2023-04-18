@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -48,18 +49,15 @@ namespace TwitchLib.Communication.Clients
                 throw ex;
             }
 
-            var message = string.Empty;
+            var memoryStream = new MemoryStream();
+            var bytes = new byte[1024];
+            var buffer = new ArraySegment<byte>(bytes);
+            WebSocketReceiveResult result;
             while (IsConnected)
             {
-                WebSocketReceiveResult result;
-                var buffer = new byte[1024];
                 try
                 {
-                    result = await Client.ReceiveAsync(new ArraySegment<byte>(buffer), Token);
-                    if (result == null)
-                    {
-                        continue;
-                    }
+                    result = await Client.ReceiveAsync(buffer, Token);
                 }
                 catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
                                            ex.GetType() == typeof(OperationCanceledException))
@@ -80,26 +78,30 @@ namespace TwitchLib.Communication.Clients
                     case WebSocketMessageType.Close:
                         await CloseAsync();
                         break;
-                    case WebSocketMessageType.Text when !result.EndOfMessage:
-                        message += Encoding.UTF8.GetString(buffer).TrimEnd('\0');
-
-                        // continue while, to receive more message-parts
-                        continue;
-
                     case WebSocketMessageType.Text:
-                        message += Encoding.UTF8.GetString(buffer).TrimEnd('\0');
-                        RaiseMessage(new OnMessageEventArgs() { Message = message });
+                        if (result.EndOfMessage && memoryStream.Position == 0)
+                        {
+                            //optimization when we can read the whole message at once
+                            var message = Encoding.UTF8.GetString(bytes, 0, result.Count);
+                            RaiseMessage(new OnMessageEventArgs() { Message = message });
+                            break;
+                        }
+                        memoryStream.Write(bytes, 0, result.Count);
+                        if (result.EndOfMessage)
+                        {
+                            var message = Encoding.UTF8.GetString(memoryStream.GetBuffer(), 0, (int)memoryStream.Position);
+                            RaiseMessage(new OnMessageEventArgs() { Message = message });
+                            memoryStream.Position = 0;
+                        }
                         break;
                     case WebSocketMessageType.Binary:
+                        //todo 
                         break;
                     default:
                         Exception ex = new ArgumentOutOfRangeException();
                         Logger?.LogExceptionAsError(GetType(), ex);
                         throw ex;
                 }
-
-                // clear/reset message
-                message = string.Empty;
             }
         }
 

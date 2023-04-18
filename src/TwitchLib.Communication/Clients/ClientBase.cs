@@ -135,11 +135,9 @@ namespace TwitchLib.Communication.Clients
                 return;
             }
 
-            var onFatalErrorEventArgs = new OnFatalErrorEventArgs("Fatal network error.");
-            if (ex != null)
-            {
-                onFatalErrorEventArgs = new OnFatalErrorEventArgs(ex);
-            }
+            var onFatalErrorEventArgs = ex != null
+                ? new OnFatalErrorEventArgs(ex)
+                : new OnFatalErrorEventArgs("Fatal network error.");
 
             OnFatality?.Invoke(this, onFatalErrorEventArgs);
         }

@@ -114,14 +114,14 @@ namespace TwitchLib.Communication.Clients
                 // the following two answers:
                 // https://stackoverflow.com/a/11191070
                 // https://stackoverflow.com/a/22078975
-                
+
                 using (var delayTaskCancellationTokenSource = new CancellationTokenSource())
                 {
                     var connectTask = Client.ConnectAsync(Url, Port);
                     var delayTask = Task.Delay(
                         (int)TimeOutEstablishConnection.TotalMilliseconds,
                         delayTaskCancellationTokenSource.Token);
-                    
+
                     await Task.WhenAny(connectTask, delayTask);
                     delayTaskCancellationTokenSource.Cancel();
                 }
@@ -133,18 +133,15 @@ namespace TwitchLib.Communication.Clients
                 }
 
                 Logger?.TraceAction(GetType(), "Client established connection successfully");
+                Stream stream = Client.GetStream();
                 if (Options.UseSsl)
                 {
-                    var ssl = new SslStream(Client.GetStream(), false);
+                    var ssl = new SslStream(stream, false);
                     await ssl.AuthenticateAsClientAsync(Url);
-                    _reader = new StreamReader(ssl);
-                    _writer = new StreamWriter(ssl);
+                    stream = ssl;
                 }
-                else
-                {
-                    _reader = new StreamReader(Client.GetStream());
-                    _writer = new StreamWriter(Client.GetStream());
-                }
+                _reader = new StreamReader(stream);
+                _writer = new StreamWriter(stream);
             }
             catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
                                        ex.GetType() == typeof(OperationCanceledException))

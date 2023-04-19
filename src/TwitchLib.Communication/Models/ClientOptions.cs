@@ -27,7 +27,7 @@ namespace TwitchLib.Communication.Models
         ///     <inheritdoc cref="ClientType"/>
         /// </param>
         public ClientOptions(
-            ReconnectionPolicy reconnectionPolicy = null,
+            ReconnectionPolicy? reconnectionPolicy = null,
             bool useSsl = true,
             uint disconnectWait = 1_500,
             ClientType clientType = ClientType.Chat)

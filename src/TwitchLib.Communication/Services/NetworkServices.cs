@@ -13,17 +13,17 @@ namespace TwitchLib.Communication.Services
     /// </summary>
     internal class NetworkServices<T> where T : IDisposable
     {
-        private Task _listenTask;
-        private Task _monitorTask;
+        private Task? _listenTask;
+        private Task? _monitorTask;
         private readonly ClientBase<T> _client;
-        private readonly ILogger _logger;
+        private readonly ILogger? _logger;
         private readonly ConnectionWatchDog<T> _connectionWatchDog;
 
         private CancellationToken Token => _client.Token;
 
         internal NetworkServices(
             ClientBase<T> client,
-            ILogger logger = null)
+            ILogger? logger = null)
         {
             _logger = logger;
             _client = client;

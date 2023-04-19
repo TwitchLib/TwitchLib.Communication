@@ -12,9 +12,9 @@ namespace TwitchLib.Communication.Clients
 {
     public class TcpClient : ClientBase<System.Net.Sockets.TcpClient>
     {
-        private StreamReader _reader;
-        private StreamWriter _writer;
-        
+        private StreamReader? _reader;
+        private StreamWriter? _writer;
+
         protected override string Url => "irc.chat.twitch.tv";
 
         private int Port => Options.UseSsl ? 6697 : 6667;
@@ -22,8 +22,8 @@ namespace TwitchLib.Communication.Clients
         public override bool IsConnected => Client?.Connected ?? false;
 
         public TcpClient(
-            IClientOptions options = null,
-            ILogger logger = null) 
+            IClientOptions? options = null,
+            ILogger? logger = null)
             : base(options, logger)
         {
         }
@@ -49,7 +49,7 @@ namespace TwitchLib.Communication.Clients
                         continue;
                     }
 
-                    RaiseMessage(new OnMessageEventArgs { Message = input });
+                    RaiseMessage(new OnMessageEventArgs(input));
                 }
                 catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
                                            ex.GetType() == typeof(OperationCanceledException))
@@ -60,7 +60,7 @@ namespace TwitchLib.Communication.Clients
                 catch (Exception ex)
                 {
                     Logger?.LogExceptionAsError(GetType(), ex);
-                    RaiseError(new OnErrorEventArgs { Exception = ex });
+                    RaiseError(new OnErrorEventArgs(ex));
                     break;
                 }
             }

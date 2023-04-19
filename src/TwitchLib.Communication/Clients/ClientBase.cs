@@ -37,30 +37,30 @@ namespace TwitchLib.Communication.Clients
         
         internal static TimeSpan TimeOutEstablishConnection => TimeSpan.FromSeconds(15);
 
-        protected ILogger Logger { get; }
+        protected ILogger? Logger { get; }
         
         protected abstract string Url { get; }
         
         /// <summary>
         ///     The underlying <see cref="T"/> client.
         /// </summary>
-        public T Client { get; private set; }
+        public T? Client { get; private set; }
 
         public abstract bool IsConnected { get; }
         
         public IClientOptions Options { get; }
 
-        public event EventHandler<OnConnectedEventArgs> OnConnected;
-        public event EventHandler<OnDisconnectedEventArgs> OnDisconnected;
-        public event EventHandler<OnErrorEventArgs> OnError;
-        public event EventHandler<OnFatalErrorEventArgs> OnFatality;
-        public event EventHandler<OnMessageEventArgs> OnMessage;
-        public event EventHandler<OnSendFailedEventArgs> OnSendFailed;
-        public event EventHandler<OnConnectedEventArgs> OnReconnected;
+        public event EventHandler<OnConnectedEventArgs>? OnConnected;
+        public event EventHandler<OnDisconnectedEventArgs>? OnDisconnected;
+        public event EventHandler<OnErrorEventArgs>? OnError;
+        public event EventHandler<OnFatalErrorEventArgs>? OnFatality;
+        public event EventHandler<OnMessageEventArgs>? OnMessage;
+        public event EventHandler<OnSendFailedEventArgs>? OnSendFailed;
+        public event EventHandler<OnConnectedEventArgs>? OnReconnected;
 
         internal ClientBase(
-            IClientOptions options = null,
-            ILogger logger = null)
+            IClientOptions? options,
+            ILogger? logger)
         {
             Logger = logger;
             _cancellationTokenSource = new CancellationTokenSource();
@@ -127,7 +127,7 @@ namespace TwitchLib.Communication.Clients
         /// <summary>
         ///     Wont raise the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
-        internal void RaiseFatal(Exception ex = null)
+        internal void RaiseFatal(Exception? ex = null)
         {
             Logger?.TraceMethodCall(GetType());
             if (Token.IsCancellationRequested)
@@ -166,7 +166,7 @@ namespace TwitchLib.Communication.Clients
             }
             catch (Exception e)
             {
-                RaiseSendFailed(new OnSendFailedEventArgs { Exception = e, Data = message });
+                RaiseSendFailed(new OnSendFailedEventArgs(e, message));
                 return false;
             }
             finally
@@ -270,7 +270,7 @@ namespace TwitchLib.Communication.Clients
             catch (Exception ex)
             {
                 Logger?.LogExceptionAsError(GetType(), ex);
-                RaiseError(new OnErrorEventArgs { Exception = ex });
+                RaiseError(new OnErrorEventArgs(ex));
                 RaiseFatal();
                 return false;
             }

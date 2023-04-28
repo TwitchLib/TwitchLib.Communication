@@ -13,7 +13,7 @@ namespace TwitchLib.Communication.Services
     /// </summary>
     internal class ConnectionWatchDog<T> where T : IDisposable
     {
-        private readonly ILogger _logger;
+        private readonly ILogger? _logger;
         private readonly ClientBase<T> _client;
 
         /// <summary>
@@ -26,13 +26,13 @@ namespace TwitchLib.Communication.Services
         ///         </item>
         ///     </list>
         /// </summary>
-        private CancellationTokenSource _cancellationTokenSource;
+        private CancellationTokenSource? _cancellationTokenSource;
 
         private const int MonitorTaskDelayInMilliseconds = 200;
 
         internal ConnectionWatchDog(
             ClientBase<T> client,
-            ILogger logger = null)
+            ILogger? logger = null)
         {
             _logger = logger;
             _client = client;
@@ -113,7 +113,7 @@ namespace TwitchLib.Communication.Services
             catch (Exception ex)
             {
                 _logger?.LogExceptionAsError(GetType(), ex);
-                _client.RaiseError(new OnErrorEventArgs { Exception = ex });
+                _client.RaiseError(new OnErrorEventArgs(ex));
                 _client.RaiseFatal();
 
                 // To ensure CancellationTokenSource is set to null again call Stop();

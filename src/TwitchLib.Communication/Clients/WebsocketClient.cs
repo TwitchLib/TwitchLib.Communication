@@ -19,8 +19,8 @@ namespace TwitchLib.Communication.Clients
         public override bool IsConnected => Client?.State == WebSocketState.Open;
 
         public WebSocketClient(
-            IClientOptions options = null,
-            ILogger logger = null)
+            IClientOptions? options = null,
+            ILogger? logger = null)
             : base(options, logger)
         {
             switch (Options.ClientType)
@@ -69,7 +69,7 @@ namespace TwitchLib.Communication.Clients
                 catch (Exception ex)
                 {
                     Logger?.LogExceptionAsError(GetType(), ex);
-                    RaiseError(new OnErrorEventArgs { Exception = ex });
+                    RaiseError(new OnErrorEventArgs(ex));
                     break;
                 }
 
@@ -83,14 +83,14 @@ namespace TwitchLib.Communication.Clients
                         {
                             //optimization when we can read the whole message at once
                             var message = Encoding.UTF8.GetString(bytes, 0, result.Count);
-                            RaiseMessage(new OnMessageEventArgs() { Message = message });
+                            RaiseMessage(new OnMessageEventArgs(message));
                             break;
                         }
                         memoryStream.Write(bytes, 0, result.Count);
                         if (result.EndOfMessage)
                         {
                             var message = Encoding.UTF8.GetString(memoryStream.GetBuffer(), 0, (int)memoryStream.Position);
-                            RaiseMessage(new OnMessageEventArgs() { Message = message });
+                            RaiseMessage(new OnMessageEventArgs(message));
                             memoryStream.Position = 0;
                         }
                         break;

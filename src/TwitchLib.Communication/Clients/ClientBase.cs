@@ -37,7 +37,7 @@ namespace TwitchLib.Communication.Clients
         
         internal static TimeSpan TimeOutEstablishConnection => TimeSpan.FromSeconds(15);
 
-        protected ILogger? Logger { get; }
+        protected readonly ILogger? Logger;
         
         protected abstract string Url { get; }
         

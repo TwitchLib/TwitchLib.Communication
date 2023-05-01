@@ -37,7 +37,7 @@ namespace TwitchLib.Communication.Clients
         
         internal static TimeSpan TimeOutEstablishConnection => TimeSpan.FromSeconds(15);
 
-        protected readonly ILogger? Logger;
+        protected readonly ILogger<ClientBase<T>>? Logger;
         
         protected abstract string Url { get; }
         
@@ -60,7 +60,7 @@ namespace TwitchLib.Communication.Clients
 
         internal ClientBase(
             IClientOptions? options,
-            ILogger? logger)
+            ILogger<ClientBase<T>>? logger)
         {
             Logger = logger;
             _cancellationTokenSource = new CancellationTokenSource();

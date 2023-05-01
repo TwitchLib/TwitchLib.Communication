@@ -23,7 +23,7 @@ namespace TwitchLib.Communication.Clients
 
         public TcpClient(
             IClientOptions? options = null,
-            ILogger? logger = null)
+            ILogger<TcpClient>? logger = null)
             : base(options, logger)
         {
         }

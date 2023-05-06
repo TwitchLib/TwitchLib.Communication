@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using TwitchLib.Communication.Events;
+using static TwitchLib.Communication.Events.CoreEvents;
 
 namespace TwitchLib.Communication.Interfaces
 {
@@ -19,37 +20,37 @@ namespace TwitchLib.Communication.Interfaces
         /// <summary>
         ///     Fires when the Client has connected
         /// </summary>
-        event EventHandler<OnConnectedEventArgs>? OnConnected;
+        event AsyncEventHandler<OnConnectedEventArgs>? OnConnected;
 
         /// <summary>
         ///     Fires when the Client disconnects
         /// </summary>
-        event EventHandler<OnDisconnectedEventArgs>? OnDisconnected;
+        event AsyncEventHandler<OnDisconnectedEventArgs>? OnDisconnected;
 
         /// <summary>
         ///     Fires when An Exception Occurs in the client
         /// </summary>
-        event EventHandler<OnErrorEventArgs>? OnError;
+        event AsyncEventHandler<OnErrorEventArgs>? OnError;
 
         /// <summary>
         ///     Fires when a Fatal Error Occurs.
         /// </summary>
-        event EventHandler<OnFatalErrorEventArgs>? OnFatality;
+        event AsyncEventHandler<OnFatalErrorEventArgs>? OnFatality;
 
         /// <summary>
         ///     Fires when a Message/ group of messages is received.
         /// </summary>
-        event EventHandler<OnMessageEventArgs>? OnMessage;
+        event AsyncEventHandler<OnMessageEventArgs>? OnMessage;
 
         /// <summary>
         ///     Fires when a message Send event failed.
         /// </summary>
-        event EventHandler<OnSendFailedEventArgs>? OnSendFailed;
+        event AsyncEventHandler<OnSendFailedEventArgs>? OnSendFailed;
 
         /// <summary>
         ///     Fires when the client reconnects automatically
         /// </summary>
-        event EventHandler<OnConnectedEventArgs>? OnReconnected;
+        event AsyncEventHandler<OnConnectedEventArgs>? OnReconnected;
 
         /// <summary>
         ///     tries to connect to twitch according to <see cref="IClientOptions.ReconnectionPolicy"/>!

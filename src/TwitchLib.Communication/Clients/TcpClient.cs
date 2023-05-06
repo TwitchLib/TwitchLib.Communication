@@ -35,7 +35,7 @@ namespace TwitchLib.Communication.Clients
             {
                 var ex = new InvalidOperationException($"{nameof(_reader)} was null!");
                 Logger?.LogExceptionAsError(GetType(), ex);
-                RaiseFatal(ex);
+                await RaiseFatal(ex);
                 throw ex;
             }
 
@@ -49,7 +49,7 @@ namespace TwitchLib.Communication.Clients
                         continue;
                     }
 
-                    RaiseMessage(new OnMessageEventArgs(input));
+                    await RaiseMessage(new OnMessageEventArgs(input));
                 }
                 catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
                                            ex.GetType() == typeof(OperationCanceledException))
@@ -60,7 +60,7 @@ namespace TwitchLib.Communication.Clients
                 catch (Exception ex)
                 {
                     Logger?.LogExceptionAsError(GetType(), ex);
-                    RaiseError(new OnErrorEventArgs(ex));
+                    await  RaiseError(new OnErrorEventArgs(ex));
                     break;
                 }
             }
@@ -78,7 +78,7 @@ namespace TwitchLib.Communication.Clients
             {
                 var ex = new InvalidOperationException($"{nameof(_writer)} was null!");
                 Logger?.LogExceptionAsError(GetType(), ex);
-                RaiseFatal(ex);
+                await RaiseFatal(ex);
                 throw ex;
             }
 

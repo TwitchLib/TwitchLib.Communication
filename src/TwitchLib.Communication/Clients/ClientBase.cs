@@ -7,6 +7,7 @@ using TwitchLib.Communication.Extensions;
 using TwitchLib.Communication.Interfaces;
 using TwitchLib.Communication.Models;
 using TwitchLib.Communication.Services;
+using static TwitchLib.Communication.Events.CoreEvents;
 
 namespace TwitchLib.Communication.Clients
 {
@@ -50,13 +51,13 @@ namespace TwitchLib.Communication.Clients
         
         public IClientOptions Options { get; }
 
-        public event EventHandler<OnConnectedEventArgs>? OnConnected;
-        public event EventHandler<OnDisconnectedEventArgs>? OnDisconnected;
-        public event EventHandler<OnErrorEventArgs>? OnError;
-        public event EventHandler<OnFatalErrorEventArgs>? OnFatality;
-        public event EventHandler<OnMessageEventArgs>? OnMessage;
-        public event EventHandler<OnSendFailedEventArgs>? OnSendFailed;
-        public event EventHandler<OnConnectedEventArgs>? OnReconnected;
+        public event AsyncEventHandler<OnConnectedEventArgs>? OnConnected;
+        public event AsyncEventHandler<OnDisconnectedEventArgs>? OnDisconnected;
+        public event AsyncEventHandler<OnErrorEventArgs>? OnError;
+        public event AsyncEventHandler<OnFatalErrorEventArgs>? OnFatality;
+        public event AsyncEventHandler<OnMessageEventArgs>? OnMessage;
+        public event AsyncEventHandler<OnSendFailedEventArgs>? OnSendFailed;
+        public event AsyncEventHandler<OnConnectedEventArgs>? OnReconnected;
 
         internal ClientBase(
             IClientOptions? options,
@@ -71,7 +72,7 @@ namespace TwitchLib.Communication.Clients
         /// <summary>
         ///     Wont raise the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
-        private void RaiseSendFailed(OnSendFailedEventArgs eventArgs)
+        private async Task RaiseSendFailed(OnSendFailedEventArgs eventArgs)
         {
             Logger?.TraceMethodCall(GetType());
             if (Token.IsCancellationRequested)
@@ -79,13 +80,13 @@ namespace TwitchLib.Communication.Clients
                 return;
             }
 
-            OnSendFailed?.Invoke(this, eventArgs);
+            if(OnSendFailed != null) await OnSendFailed.Invoke(this, eventArgs);
         }
 
         /// <summary>
         ///     Wont raise the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
-        internal void RaiseError(OnErrorEventArgs eventArgs)
+        internal async Task RaiseError(OnErrorEventArgs eventArgs)
         {
             Logger?.TraceMethodCall(GetType());
             if (Token.IsCancellationRequested)
@@ -93,13 +94,13 @@ namespace TwitchLib.Communication.Clients
                 return;
             }
 
-            OnError?.Invoke(this, eventArgs);
+            if (OnError != null) await OnError.Invoke(this, eventArgs);
         }
 
         /// <summary>
         ///     Wont raise the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
-        private void RaiseReconnected()
+        private async Task RaiseReconnected()
         {
             Logger?.TraceMethodCall(GetType());
             if (Token.IsCancellationRequested)
@@ -107,13 +108,13 @@ namespace TwitchLib.Communication.Clients
                 return;
             }
 
-            OnReconnected?.Invoke(this, new OnConnectedEventArgs());
+            if (OnReconnected != null) await OnReconnected.Invoke(this, new OnConnectedEventArgs());
         }
 
         /// <summary>
         ///     Wont raise the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
-        internal void RaiseMessage(OnMessageEventArgs eventArgs)
+        internal async Task RaiseMessage(OnMessageEventArgs eventArgs)
         {
             Logger?.TraceMethodCall(GetType());
             if (Token.IsCancellationRequested)
@@ -121,13 +122,13 @@ namespace TwitchLib.Communication.Clients
                 return;
             }
 
-            OnMessage?.Invoke(this, eventArgs);
+            if (OnMessage != null) await OnMessage.Invoke(this, eventArgs);
         }
 
         /// <summary>
         ///     Wont raise the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
         /// </summary>
-        internal void RaiseFatal(Exception? ex = null)
+        internal async Task RaiseFatal(Exception? ex = null)
         {
             Logger?.TraceMethodCall(GetType());
             if (Token.IsCancellationRequested)
@@ -139,19 +140,19 @@ namespace TwitchLib.Communication.Clients
                 ? new OnFatalErrorEventArgs(ex)
                 : new OnFatalErrorEventArgs("Fatal network error.");
 
-            OnFatality?.Invoke(this, onFatalErrorEventArgs);
+            if (OnFatality != null) await OnFatality.Invoke(this, onFatalErrorEventArgs);
         }
 
-        private void RaiseDisconnected()
+        private async Task RaiseDisconnected()
         {
             Logger?.TraceMethodCall(GetType());
-            OnDisconnected?.Invoke(this, new OnDisconnectedEventArgs());
+            if (OnDisconnected != null) await OnDisconnected.Invoke(this, new OnDisconnectedEventArgs());
         }
 
-        private void RaiseConnected()
+        private async Task RaiseConnected()
         {
             Logger?.TraceMethodCall(GetType());
-            OnConnected?.Invoke(this, new OnConnectedEventArgs());
+            if (OnConnected != null) await OnConnected.Invoke(this, new OnConnectedEventArgs());
         }
 
         public async Task<bool> SendAsync(string message)
@@ -166,7 +167,7 @@ namespace TwitchLib.Communication.Clients
             }
             catch (Exception e)
             {
-                RaiseSendFailed(new OnSendFailedEventArgs(e, message));
+                await RaiseSendFailed(new OnSendFailedEventArgs(e, message));
                 return false;
             }
             finally
@@ -253,7 +254,7 @@ namespace TwitchLib.Communication.Clients
                 if (!IsConnected)
                 {
                     Logger?.TraceAction(GetType(), "Client couldn't establish a connection");
-                    RaiseFatal();
+                    await RaiseFatal();
                     return false;
                 }
 
@@ -262,7 +263,7 @@ namespace TwitchLib.Communication.Clients
                 
                 if (!isReconnect)
                 {
-                    RaiseConnected();
+                   await RaiseConnected();
                 }
 
                 return true;
@@ -270,8 +271,8 @@ namespace TwitchLib.Communication.Clients
             catch (Exception ex)
             {
                 Logger?.LogExceptionAsError(GetType(), ex);
-                RaiseError(new OnErrorEventArgs(ex));
-                RaiseFatal();
+                await RaiseError(new OnErrorEventArgs(ex));
+                await RaiseFatal();
                 return false;
             }
         }
@@ -298,7 +299,7 @@ namespace TwitchLib.Communication.Clients
                 $"{nameof(_cancellationTokenSource)}.{nameof(_cancellationTokenSource.Cancel)} is called");
 
             CloseClient();
-            RaiseDisconnected();
+            await RaiseDisconnected();
             _cancellationTokenSource = new CancellationTokenSource();
 
             await Task.Delay(TimeSpan.FromMilliseconds(Options.DisconnectWait), CancellationToken.None);
@@ -360,7 +361,7 @@ namespace TwitchLib.Communication.Clients
             var reconnected = await OpenPrivateAsync(true);
             if (reconnected)
             {
-                RaiseReconnected();
+               await RaiseReconnected();
             }
 
             return reconnected;

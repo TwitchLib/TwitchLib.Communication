@@ -7,7 +7,6 @@ using TwitchLib.Communication.Extensions;
 using TwitchLib.Communication.Interfaces;
 using TwitchLib.Communication.Models;
 using TwitchLib.Communication.Services;
-using static TwitchLib.Communication.Events.CoreEvents;
 
 namespace TwitchLib.Communication.Clients
 {

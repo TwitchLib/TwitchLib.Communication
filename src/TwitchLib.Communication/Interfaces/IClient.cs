@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using TwitchLib.Communication.Events;
-using static TwitchLib.Communication.Events.CoreEvents;
 
 namespace TwitchLib.Communication.Interfaces
 {

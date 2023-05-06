@@ -8,7 +8,6 @@ using TwitchLib.Communication.Interfaces;
 using TwitchLib.Communication.Models;
 using TwitchLib.Communication.Tests.Helpers;
 using Xunit;
-using static TwitchLib.Communication.Events.CoreEvents;
 using Xunit.Sdk;
 
 [assembly: CollectionBehavior(DisableTestParallelization = true)]

@@ -20,7 +20,7 @@ namespace TwitchLib.Communication.Clients
 
         public WebSocketClient(
             IClientOptions? options = null,
-            ILogger? logger = null)
+            ILogger<WebSocketClient>? logger = null)
             : base(options, logger)
         {
             switch (Options.ClientType)

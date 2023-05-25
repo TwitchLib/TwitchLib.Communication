@@ -1,53 +1,33 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿#pragma warning disable SYSLIB1006 // Multiple logging methods cannot use the same event id within a class
 using Microsoft.Extensions.Logging;
+using System;
+using System.Runtime.CompilerServices;
 
 namespace TwitchLib.Communication.Extensions
 {
     /// <summary>
     ///     expensive Extensions of the <see cref="ILogger"/>
     /// </summary>
-    internal static class LogExtensions
+    internal static partial class LogExtensions
     {
-        public static void TraceMethodCall(this ILogger logger,
-                                           Type type,
-                                           [CallerMemberName] string callerMemberName = "",
-                                           [CallerLineNumber] int callerLineNumber = 0)
+        public static void TraceMethodCall(this ILogger logger, Type type, [CallerMemberName] string callerMemberName = "", [CallerLineNumber] int callerLineNumber = 0)
         {
             // because of the code-formatting, 2 line is subtracted from the callerLineNumber
             // cant be done inline!
             callerLineNumber -= 2;
-            logger.LogTrace("{FullName}.{callerMemberName} at line {callerLineNumber} is called",
-                             type.FullName, callerMemberName, callerLineNumber);
+            TraceMethodCallCore(logger, type, callerMemberName, callerLineNumber);
         }
-        public static void LogExceptionAsError(this ILogger logger,
-                                               Type type,
-                                               Exception exception,
-                                               [CallerMemberName] string callerMemberName = "",
-                                               [CallerLineNumber] int callerLineNumber = 0)
-        {
-            logger.LogError(exception,
-                             "Exception in {FullName}.{callerMemberName} at line {callerLineNumber}:",
-                             type.FullName, callerMemberName, callerLineNumber);
-        }
-        public static void LogExceptionAsInformation(this ILogger logger,
-                                                     Type type,
-                                                     Exception exception,
-                                                     [CallerMemberName] string callerMemberName = "",
-                                                     [CallerLineNumber] int callerLineNumber = 0)
-        {
-            logger.LogInformation(exception,
-                                   "Exception in {FullName}.{callerMemberName} at line {callerLineNumber}:",
-                                   type.FullName, callerMemberName, callerLineNumber);
-        }
-        public static void TraceAction(this ILogger logger,
-                                       Type type,
-                                       string action,
-                                       [CallerMemberName] string callerMemberName = "",
-                                       [CallerLineNumber] int callerLineNumber = 0)
-        {
-            logger.LogTrace("{FullName}.{callerMemberName} at line {callerLineNumber}: {action}",
-                             type.FullName, callerMemberName, callerLineNumber, action);
-        }
+
+        [LoggerMessage(0, LogLevel.Trace, "{type}.{callerMemberName} at line {callerLineNumber} is called")]
+        static partial void TraceMethodCallCore(this ILogger logger, Type type, string callerMemberName, int callerLineNumber);
+
+        [LoggerMessage(0, LogLevel.Error, "Exception in {type}.{callerMemberName} at line {callerLineNumber}")]
+        public static partial void LogExceptionAsError(this ILogger logger, Type type, Exception exception, [CallerMemberName] string callerMemberName = "", [CallerLineNumber] int callerLineNumber = 0);
+
+        [LoggerMessage(0, LogLevel.Information, "Exception in {type}.{callerMemberName} at line {callerLineNumber}")]
+        public static partial void LogExceptionAsInformation(this ILogger logger, Type type, Exception exception, [CallerMemberName] string callerMemberName = "", [CallerLineNumber] int callerLineNumber = 0);
+
+        [LoggerMessage(0, LogLevel.Trace, "{type}.{callerMemberName} at line {callerLineNumber}: {action}")]
+        public static partial void TraceAction(this ILogger logger, Type type, string action, [CallerMemberName] string callerMemberName = "", [CallerLineNumber] int callerLineNumber = 0);
     }
 }

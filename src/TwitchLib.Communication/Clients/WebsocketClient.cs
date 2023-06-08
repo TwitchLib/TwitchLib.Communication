@@ -45,7 +45,7 @@ namespace TwitchLib.Communication.Clients
             {
                 var ex = new InvalidOperationException($"{nameof(Client)} was null!");
                 Logger?.LogExceptionAsError(GetType(), ex);
-                RaiseFatal(ex);
+                await RaiseFatal(ex);
                 throw ex;
             }
 
@@ -69,7 +69,7 @@ namespace TwitchLib.Communication.Clients
                 catch (Exception ex)
                 {
                     Logger?.LogExceptionAsError(GetType(), ex);
-                    RaiseError(new OnErrorEventArgs(ex));
+                    await RaiseError(new OnErrorEventArgs(ex));
                     break;
                 }
 
@@ -83,14 +83,14 @@ namespace TwitchLib.Communication.Clients
                         {
                             //optimization when we can read the whole message at once
                             var message = Encoding.UTF8.GetString(bytes, 0, result.Count);
-                            RaiseMessage(new OnMessageEventArgs(message));
+                            await RaiseMessage(new OnMessageEventArgs(message));
                             break;
                         }
                         memoryStream.Write(bytes, 0, result.Count);
                         if (result.EndOfMessage)
                         {
                             var message = Encoding.UTF8.GetString(memoryStream.GetBuffer(), 0, (int)memoryStream.Position);
-                            RaiseMessage(new OnMessageEventArgs(message));
+                            await RaiseMessage(new OnMessageEventArgs(message));
                             memoryStream.Position = 0;
                         }
                         break;
@@ -122,7 +122,7 @@ namespace TwitchLib.Communication.Clients
             {
                 var ex = new InvalidOperationException($"{nameof(Client)} was null!");
                 Logger?.LogExceptionAsError(GetType(), ex);
-                RaiseFatal(ex);
+                await RaiseFatal(ex);
                 throw ex;
             }
 
@@ -140,7 +140,7 @@ namespace TwitchLib.Communication.Clients
             {
                 var ex = new InvalidOperationException($"{nameof(Client)} was null!");
                 Logger?.LogExceptionAsError(GetType(), ex);
-                RaiseFatal(ex);
+                await RaiseFatal(ex);
                 throw ex;
             }
 

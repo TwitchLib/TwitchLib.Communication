@@ -113,8 +113,8 @@ namespace TwitchLib.Communication.Services
             catch (Exception ex)
             {
                 _logger?.LogExceptionAsError(GetType(), ex);
-                _client.RaiseError(new OnErrorEventArgs(ex));
-                _client.RaiseFatal();
+                await _client.RaiseError(new OnErrorEventArgs(ex));
+                await _client.RaiseFatal();
 
                 // To ensure CancellationTokenSource is set to null again call Stop();
                 await StopAsync();

@@ -59,10 +59,13 @@ namespace TwitchLib.Communication.Clients
                 {
                     result = await Client.ReceiveAsync(buffer, Token);
                 }
-                catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
-                                           ex.GetType() == typeof(OperationCanceledException))
+                catch (TaskCanceledException _)
                 {
-                    // occurs if the Tasks are canceled by the CancellationTokenSource.Token
+                    // Swallow any cancellation exceptions
+                    break;
+                }
+                catch (OperationCanceledException ex)
+                {
                     Logger?.LogExceptionAsInformation(GetType(), ex);
                     break;
                 }

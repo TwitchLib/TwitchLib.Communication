@@ -29,6 +29,8 @@ namespace TwitchLib.Communication.Services
         private CancellationTokenSource? _cancellationTokenSource;
 
         private const int MonitorTaskDelayInMilliseconds = 200;
+        
+        public bool IsRunning { get; private set; }
 
         internal ConnectionWatchDog(
             ClientBase<T> client,
@@ -52,11 +54,13 @@ namespace TwitchLib.Communication.Services
             // This should be the only place where a new instance of CancellationTokenSource is set
             _cancellationTokenSource = new CancellationTokenSource();
 
+            IsRunning = true;
             return Task.Run(MonitorTaskActionAsync, _cancellationTokenSource.Token);
         }
 
         internal async Task StopAsync()
         {
+            IsRunning = false;
             _logger?.TraceMethodCall(GetType());
             _cancellationTokenSource?.Cancel();
             // give MonitorTaskAction a chance to catch cancellation
@@ -72,7 +76,7 @@ namespace TwitchLib.Communication.Services
             _logger?.TraceMethodCall(GetType());
             try
             {
-                while (_cancellationTokenSource != null && 
+                while (_cancellationTokenSource != null &&
                        !_cancellationTokenSource.Token.IsCancellationRequested)
                 {
                     // we expect the client is connected,
@@ -85,7 +89,7 @@ namespace TwitchLib.Communication.Services
                         // ReconnectInternal() calls the correct Close-Method within the Client
                         // ReconnectInternal() makes attempts to reconnect according to the ReconnectionPolicy within the IClientOptions
                         _logger?.TraceAction(GetType(), "Try to reconnect");
-                        
+
                         var connected = await _client.ReconnectInternalAsync();
                         if (!connected)
                         {
@@ -104,8 +108,11 @@ namespace TwitchLib.Communication.Services
                     await Task.Delay(MonitorTaskDelayInMilliseconds);
                 }
             }
-            catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
-                                       ex.GetType() == typeof(OperationCanceledException))
+            catch (TaskCanceledException _)
+            {
+                // Swallow any cancellation exceptions
+            }
+            catch (OperationCanceledException ex)
             {
                 // Occurs if the Tasks are canceled by the CancellationTokenSource.Token
                 _logger?.LogExceptionAsInformation(GetType(), ex);

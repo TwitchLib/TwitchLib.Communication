@@ -184,10 +184,7 @@ namespace TwitchLib.Communication.Clients
         public async Task CloseAsync()
         {
             Logger?.TraceMethodCall(GetType());
-            
-            // Network services has to be stopped first so that it wont reconnect
-            await _networkServices.StopAsync();
-            
+
             // ClosePrivate() also handles IClientOptions.DisconnectWait
             await ClosePrivateAsync();
         }
@@ -205,12 +202,6 @@ namespace TwitchLib.Communication.Clients
         public async Task<bool> ReconnectAsync()
         {
             Logger?.TraceMethodCall(GetType());
-            
-            // Stops everything (including NetworkServices)
-            if (IsConnected)
-            {
-                await CloseAsync();
-            }
 
             return await ReconnectInternalAsync();
         }
@@ -292,6 +283,8 @@ namespace TwitchLib.Communication.Clients
         {
             Logger?.TraceMethodCall(GetType());
             
+            await _networkServices.StopAsync();
+            
             // This cancellation traverse up to NetworkServices.ListenTask
             _cancellationTokenSource.Cancel();
             Logger?.TraceAction(GetType(),
@@ -356,6 +349,7 @@ namespace TwitchLib.Communication.Clients
         internal async Task<bool> ReconnectInternalAsync()
         {
             Logger?.TraceMethodCall(GetType());
+            
             await ClosePrivateAsync();
             var reconnected = await OpenPrivateAsync(true);
             if (reconnected)

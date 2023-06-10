@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Extensions;
-using TwitchLib.Communication.Helpers;
 
 namespace TwitchLib.Communication.Services
 {

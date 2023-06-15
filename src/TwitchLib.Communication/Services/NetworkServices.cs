@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Extensions;
-using TwitchLib.Communication.Helpers;
 
 namespace TwitchLib.Communication.Services
 {
@@ -33,7 +32,7 @@ namespace TwitchLib.Communication.Services
         internal void Start()
         {
             _logger?.TraceMethodCall(GetType());
-            if (_monitorTask == null || !_monitorTask.IsTaskRunning())
+            if (_monitorTask == null || !_connectionWatchDog.IsRunning)
             {
                 // this task is probably still running
                 // may be in case of a network connection loss

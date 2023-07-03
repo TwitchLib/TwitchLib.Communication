@@ -1,7 +1,6 @@
 ﻿#pragma warning disable SYSLIB1006 // Multiple logging methods cannot use the same event id within a class
-using Microsoft.Extensions.Logging;
-using System;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
 
 namespace TwitchLib.Communication.Extensions
 {

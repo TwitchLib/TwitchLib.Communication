@@ -1,8 +1,7 @@
 ﻿using TwitchLib.Communication.Clients;
 
-namespace TwitchLib.Communication.Tests.Clients
+namespace TwitchLib.Communication.Tests.Clients;
+
+public class WebSocketClientTests : ClientTestsBase<WebSocketClient>
 {
-    public class WebSocketClientTests : ClientTestsBase<WebSocketClient>
-    {
-    }
 }

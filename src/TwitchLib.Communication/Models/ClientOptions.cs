@@ -5,9 +5,16 @@ namespace TwitchLib.Communication.Models;
 
 public class ClientOptions : IClientOptions
 {
+    /// <inheritdoc/>
     public ReconnectionPolicy ReconnectionPolicy { get; }
+
+    /// <inheritdoc/>
     public bool UseSsl { get; }
+
+    /// <inheritdoc/>
     public uint DisconnectWait { get; }
+
+    /// <inheritdoc/>
     public ClientType ClientType { get; }
 
     /// <summary>

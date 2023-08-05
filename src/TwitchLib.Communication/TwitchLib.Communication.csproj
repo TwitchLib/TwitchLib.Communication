@@ -23,7 +23,6 @@
         <FileVersion>2.0.0</FileVersion>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
-        <Features>strict</Features>
         <WarningsAsErrors>nullable</WarningsAsErrors>
     </PropertyGroup>
     <ItemGroup>

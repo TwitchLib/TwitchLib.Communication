@@ -1,8 +1,7 @@
-﻿namespace TwitchLib.Communication.Enums
+﻿namespace TwitchLib.Communication.Enums;
+
+public enum ClientType
 {
-    public enum ClientType
-    {
-        Chat,
-        PubSub
-    }
+    Chat,
+    PubSub,
 }

@@ -3,6 +3,7 @@
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net7.0</TargetFrameworks>
         <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>latest</LangVersion>
         <VersionPrefix>2.0.0</VersionPrefix>
         <VersionSuffix>$(VersionSuffix)</VersionSuffix>
@@ -22,6 +23,7 @@
         <FileVersion>2.0.0</FileVersion>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
+        <WarningsAsErrors>nullable</WarningsAsErrors>
     </PropertyGroup>
     <ItemGroup>
         <InternalsVisibleTo Include="$(MSBuildProjectName).Tests"/>

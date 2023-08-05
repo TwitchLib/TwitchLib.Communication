@@ -2,13 +2,13 @@
 
 public class OnSendFailedEventArgs : EventArgs
 {
-    public string Data { get; }
+    public string Message { get; }
 
     public Exception Exception { get; }
 
-    public OnSendFailedEventArgs(Exception exception, string data)
+    public OnSendFailedEventArgs(Exception exception, string message)
     {
         Exception = exception;
-        Data = data;
+        Message = message;
     }
 }

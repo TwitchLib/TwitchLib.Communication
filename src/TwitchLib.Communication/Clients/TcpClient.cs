@@ -49,8 +49,7 @@ public class TcpClient : ClientBase<System.Net.Sockets.TcpClient>
 
                 await RaiseMessage(new OnMessageEventArgs(input));
             }
-            catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
-                                       ex.GetType() == typeof(OperationCanceledException))
+            catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException)
             {
                 // occurs if the Tasks are canceled by the CancellationTokenSource.Token
                 Logger?.LogExceptionAsInformation(GetType(), ex);
@@ -143,8 +142,7 @@ public class TcpClient : ClientBase<System.Net.Sockets.TcpClient>
             _reader = new StreamReader(stream);
             _writer = new StreamWriter(stream);
         }
-        catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
-                                   ex.GetType() == typeof(OperationCanceledException))
+        catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException)
         {
             // occurs if the Tasks are canceled by the CancellationTokenSource.Token
             Logger?.LogExceptionAsInformation(GetType(), ex);

@@ -184,8 +184,7 @@ public class WebSocketClient : ClientBase<ClientWebSocket>
                 Logger?.TraceAction(GetType(), "Client couldn't establish connection");
             }
         }
-        catch (Exception ex) when (ex.GetType() == typeof(TaskCanceledException) ||
-                                   ex.GetType() == typeof(OperationCanceledException))
+        catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException)
         {
             // occurs if the Tasks are canceled by the CancellationTokenSource.Token
             Logger?.LogExceptionAsInformation(GetType(), ex);

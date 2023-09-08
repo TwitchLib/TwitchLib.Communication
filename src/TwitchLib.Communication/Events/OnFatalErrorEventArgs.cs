@@ -1,9 +1,16 @@
-﻿using System;
+﻿namespace TwitchLib.Communication.Events;
 
-namespace TwitchLib.Communication.Events
+public class OnFatalErrorEventArgs : EventArgs
 {
-    public class OnFatalErrorEventArgs : EventArgs
+    public string Reason { get; }
+
+    public OnFatalErrorEventArgs(string reason)
     {
-        public string Reason;
+        Reason = reason;
+    }
+
+    public OnFatalErrorEventArgs(Exception e)
+    {
+        Reason = e.ToString();
     }
 }

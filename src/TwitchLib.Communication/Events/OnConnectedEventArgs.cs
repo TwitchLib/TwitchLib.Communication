@@ -1,7 +1,3 @@
-﻿using System;
+﻿namespace TwitchLib.Communication.Events;
 
-namespace TwitchLib.Communication.Events
-{
-    public class OnConnectedEventArgs : EventArgs
-    { }
-}
+public class OnConnectedEventArgs : EventArgs { }

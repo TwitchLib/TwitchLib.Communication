@@ -1,9 +1,11 @@
-﻿using System;
+﻿namespace TwitchLib.Communication.Events;
 
-namespace TwitchLib.Communication.Events
+public class OnMessageEventArgs : EventArgs
 {
-    public class OnMessageEventArgs : EventArgs
+    public string Message { get; }
+
+    public OnMessageEventArgs(string message)
     {
-        public string Message;
+        Message = message;
     }
 }

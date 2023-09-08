@@ -1,9 +1,11 @@
-﻿using System;
+﻿namespace TwitchLib.Communication.Events;
 
-namespace TwitchLib.Communication.Events
+public class OnErrorEventArgs : EventArgs
 {
-    public class OnErrorEventArgs : EventArgs
+    public Exception Exception { get; }
+
+    public OnErrorEventArgs(Exception exception)
     {
-        public Exception Exception { get; set; }
+        Exception = exception;
     }
 }

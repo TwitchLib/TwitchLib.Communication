@@ -18,6 +18,7 @@ public class ClientOptions : IClientOptions
     public ClientType ClientType { get; }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="ClientOptions"/>.
     /// </summary>
     /// <param name="reconnectionPolicy">
     ///     your own <see cref="ReconnectionPolicy"/>

@@ -10,10 +10,15 @@ namespace TwitchLib.Communication.Clients;
 
 public class WebSocketClient : ClientBase<ClientWebSocket>
 {
+    /// <inheritdoc/>
     protected override string Url { get; }
 
+    /// <inheritdoc/>
     public override bool IsConnected => Client?.State == WebSocketState.Open;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WebSocketClient"/>.
+    /// </summary>
     public WebSocketClient(
         IClientOptions? options = null,
         ILogger<WebSocketClient>? logger = null)

@@ -252,8 +252,17 @@ public abstract class ClientBase<T> : IClient
                     await Task.Delay(Options.ReconnectionPolicy.GetReconnectInterval(), CancellationToken.None);
                 }
 
-                await ConnectClientAsync();
-                Options.ReconnectionPolicy.ProcessValues();
+                try
+                {
+                    await ConnectClientAsync();
+                    Options.ReconnectionPolicy.ProcessValues();
+                }
+                catch (ObjectDisposedException)
+                {
+                    Logger?.TraceAction(GetType(), "object disposed. Recreating.");
+                    Client = CreateClient();
+                }
+
                 first = false;
             }
 

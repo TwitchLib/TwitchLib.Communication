@@ -189,6 +189,10 @@ public class WebSocketClient : ClientBase<ClientWebSocket>
             // occurs if the Tasks are canceled by the CancellationTokenSource.Token
             Logger?.LogExceptionAsInformation(GetType(), ex);
         }
+        catch (ObjectDisposedException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             Logger?.LogExceptionAsError(GetType(), ex);

@@ -5,6 +5,9 @@
 /// </summary>
 public class NoReconnectionPolicy : ReconnectionPolicy
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NoReconnectionPolicy"/>.
+    /// </summary>
     public NoReconnectionPolicy()
         : base(
             reconnectInterval: 0, 

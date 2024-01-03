@@ -19,6 +19,9 @@ public class TcpClient : ClientBase<System.Net.Sockets.TcpClient>
     /// <inheritdoc/>
     public override bool IsConnected => Client?.Connected ?? false;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TcpClient"/>.
+    /// </summary>
     public TcpClient(
         IClientOptions? options = null,
         ILogger<TcpClient>? logger = null)

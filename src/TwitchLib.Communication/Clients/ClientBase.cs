@@ -237,9 +237,6 @@ public abstract class ClientBase<T> : IClient
                 return true;
             }
 
-            // Always create new client when opening new connection
-            Client = CreateClient();
-
             var first = true;
             Options.ReconnectionPolicy.Reset(isReconnect);
 
@@ -247,6 +244,10 @@ public abstract class ClientBase<T> : IClient
                    !Options.ReconnectionPolicy.AreAttemptsComplete())
             {
                 Logger?.TraceAction(GetType(), "try to connect");
+
+                // Always create new client when opening new connection
+                Client = CreateClient();
+
                 if (!first)
                 {
                     await Task.Delay(Options.ReconnectionPolicy.GetReconnectInterval(), CancellationToken.None);

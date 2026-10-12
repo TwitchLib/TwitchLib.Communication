@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Net.WebSockets;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 
 namespace TwitchLib.Communication.Extensions
@@ -27,5 +28,8 @@ namespace TwitchLib.Communication.Extensions
 
         [LoggerMessage(LogLevel.Trace, "{type}.{callerMemberName} at line {callerLineNumber}: {action}")]
         public static partial void TraceAction(this ILogger logger, Type type, string action, [CallerMemberName] string callerMemberName = "", [CallerLineNumber] int callerLineNumber = 0);
+
+        [LoggerMessage(LogLevel.Trace, "{type}: the server closed the connection: {closeStatus} {closeStatusDescription}")]
+        public static partial void TraceServerClosedConnection(this ILogger logger, Type type, WebSocketCloseStatus? closeStatus, string? closeStatusDescription);
     }
 }

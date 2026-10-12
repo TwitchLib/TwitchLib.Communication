@@ -85,7 +85,11 @@ public class WebSocketClient : ClientBase<ClientWebSocket>
             switch (result.MessageType)
             {
                 case WebSocketMessageType.Close:
-                    await CloseAsync();
+                    // The server closed the connection. Leave the loop and let the ConnectionWatchDog
+                    // handle it like any other lost connection, according to the ReconnectionPolicy.
+                    // Calling CloseAsync() here stopped the ConnectionWatchDog as well,
+                    // so the client never reconnected after the server had closed the connection.
+                    Logger?.TraceServerClosedConnection(GetType(), Client.CloseStatus, Client.CloseStatusDescription);
                     break;
                 case WebSocketMessageType.Text:
                     if (result.EndOfMessage && memoryStream.Position == 0)

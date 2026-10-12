@@ -52,7 +52,8 @@ internal class ConnectionWatchDog<T> where T : IDisposable
         _cancellationTokenSource = new CancellationTokenSource();
 
         IsRunning = true;
-        return Task.Run(MonitorTaskActionAsync, _cancellationTokenSource.Token);
+        var token = _cancellationTokenSource.Token;
+        return Task.Run(() => MonitorTaskActionAsync(token), token);
     }
 
     internal async Task StopAsync()
@@ -68,13 +69,21 @@ internal class ConnectionWatchDog<T> where T : IDisposable
         _cancellationTokenSource = null;
     }
 
-    private async Task MonitorTaskActionAsync()
+    /// <param name="token">
+    ///     The token of this very monitor task.
+    ///     <br></br>
+    ///     A reconnect made by this task stops it and starts a new monitor task (see <see cref="NetworkServices{T}.Start"/>),
+    ///     which replaces <see cref="_cancellationTokenSource"/>.
+    ///     Checking the field instead kept this task running next to the new one;
+    ///     two monitor tasks then reconnected at the same time on the next connection loss,
+    ///     opened several connections and used up the attempts of the <see cref="Models.ReconnectionPolicy"/>.
+    /// </param>
+    private async Task MonitorTaskActionAsync(CancellationToken token)
     {
         _logger?.TraceMethodCall(GetType());
         try
         {
-            while (_cancellationTokenSource != null &&
-                   !_cancellationTokenSource.Token.IsCancellationRequested)
+            while (!token.IsCancellationRequested)
             {
                 // we expect the client is connected,
                 // when this monitor task starts
@@ -121,7 +130,11 @@ internal class ConnectionWatchDog<T> where T : IDisposable
             await _client.RaiseFatal();
 
             // To ensure CancellationTokenSource is set to null again call Stop();
-            await StopAsync();
+            // unless this task has been stopped already and a new monitor task may be running
+            if (!token.IsCancellationRequested)
+            {
+                await StopAsync();
+            }
         }
     }
 }

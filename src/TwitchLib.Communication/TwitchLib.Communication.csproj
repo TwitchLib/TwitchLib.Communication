@@ -5,7 +5,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>latest</LangVersion>
-        <VersionPrefix>2.0.1</VersionPrefix>
+        <VersionPrefix>2.0.2</VersionPrefix>
         <VersionSuffix>$(VersionSuffix)</VersionSuffix>
         <Authors>swiftyspiffy, Prom3theu5, Syzuna, LuckyNoS7evin</Authors>
         <Company>swiftyspiffy, Prom3theu5, Syzuna, LuckyNoS7evin</Company>

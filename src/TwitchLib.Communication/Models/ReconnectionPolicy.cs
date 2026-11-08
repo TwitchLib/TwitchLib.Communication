@@ -171,6 +171,21 @@ public class ReconnectionPolicy
         _maxAttempts = _initMaxAttempts;
     }
 
+    /// <summary>
+    ///     A connection has been established, so the next connection loss gets all of its attempts again.
+    ///     Without this, the attempts added up over the lifetime of the client,
+    ///     and it stopped reconnecting for good after <c>maxAttempts</c> connection losses.
+    ///     <br></br>
+    ///     <br></br>
+    ///     The attempt that established the connection still counts,
+    ///     so a policy with a single attempt (<see cref="NoReconnectionPolicy"/>) still never reconnects.
+    /// </summary>
+    internal void ConnectionEstablished()
+    {
+        _attemptsMade = 1;
+        _currentReconnectInterval = _reconnectStepInterval;
+    }
+
     internal void ProcessValues()
     {
         _attemptsMade++;

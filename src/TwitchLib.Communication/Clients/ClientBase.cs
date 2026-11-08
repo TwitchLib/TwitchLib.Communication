@@ -91,21 +91,33 @@ public abstract class ClientBase<T> : IClient
             return;
         }
 
-        if (OnSendFailed != null) await OnSendFailed.Invoke(this, eventArgs);
+        await InvokeSubscribersAsync(OnSendFailed, eventArgs);
     }
 
     /// <summary>
     ///     Wont raise the given <see cref="EventArgs"/> if <see cref="Token"/>.IsCancellationRequested
+    ///     <br></br>
+    ///     An exception thrown by a subscriber is logged and swallowed: there is nowhere left to report it.
     /// </summary>
     internal async Task RaiseError(OnErrorEventArgs eventArgs)
     {
         Logger?.TraceMethodCall(GetType());
-        if (Token.IsCancellationRequested)
+        if (Token.IsCancellationRequested || OnError == null)
         {
             return;
         }
 
-        if (OnError != null) await OnError.Invoke(this, eventArgs);
+        foreach (var subscriber in OnError.GetInvocationList().Cast<AsyncEventHandler<OnErrorEventArgs>>())
+        {
+            try
+            {
+                await subscriber(this, eventArgs);
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogExceptionAsError(GetType(), ex);
+            }
+        }
     }
 
     /// <summary>
@@ -119,7 +131,7 @@ public abstract class ClientBase<T> : IClient
             return;
         }
 
-        if (OnReconnected != null) await OnReconnected.Invoke(this, new OnConnectedEventArgs());
+        await InvokeSubscribersAsync(OnReconnected, new OnConnectedEventArgs());
     }
 
     /// <summary>
@@ -133,7 +145,7 @@ public abstract class ClientBase<T> : IClient
             return;
         }
 
-        if (OnMessage != null) await OnMessage.Invoke(this, eventArgs);
+        await InvokeSubscribersAsync(OnMessage, eventArgs);
     }
 
     /// <summary>
@@ -151,19 +163,50 @@ public abstract class ClientBase<T> : IClient
             ? new OnFatalErrorEventArgs(ex)
             : new OnFatalErrorEventArgs("Fatal network error.");
 
-        if (OnFatality != null) await OnFatality.Invoke(this, onFatalErrorEventArgs);
+        await InvokeSubscribersAsync(OnFatality, onFatalErrorEventArgs);
     }
 
     private async Task RaiseDisconnected()
     {
         Logger?.TraceMethodCall(GetType());
-        if (OnDisconnected != null) await OnDisconnected.Invoke(this, new OnDisconnectedEventArgs());
+        await InvokeSubscribersAsync(OnDisconnected, new OnDisconnectedEventArgs());
     }
 
     private async Task RaiseConnected()
     {
         Logger?.TraceMethodCall(GetType());
-        if (OnConnected != null) await OnConnected.Invoke(this, new OnConnectedEventArgs());
+        await InvokeSubscribersAsync(OnConnected, new OnConnectedEventArgs());
+    }
+
+    /// <summary>
+    ///     Awaits every subscriber of <paramref name="handler"/> one after another
+    ///     and reports an exception thrown by a subscriber through <see cref="OnError"/> instead of rethrowing it.
+    ///     <br></br>
+    ///     <br></br>
+    ///     The events are raised from the listen task and from the <see cref="ConnectionWatchDog{T}"/>.
+    ///     An exception escaping from a subscriber used to end them silently:
+    ///     <see cref="IsConnected"/> kept returning <see langword="true"/>,
+    ///     while no more messages were read and no reconnect was made.
+    /// </summary>
+    private async Task InvokeSubscribersAsync<TEventArgs>(AsyncEventHandler<TEventArgs>? handler, TEventArgs eventArgs)
+    {
+        if (handler == null)
+        {
+            return;
+        }
+
+        foreach (var subscriber in handler.GetInvocationList().Cast<AsyncEventHandler<TEventArgs>>())
+        {
+            try
+            {
+                await subscriber(this, eventArgs);
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogExceptionAsError(GetType(), ex);
+                await RaiseError(new OnErrorEventArgs(ex));
+            }
+        }
     }
 
     /// <inheritdoc/>
@@ -266,6 +309,7 @@ public abstract class ClientBase<T> : IClient
             }
 
             Logger?.TraceAction(GetType(), "Client established a connection");
+            Options.ReconnectionPolicy.ConnectionEstablished();
             _networkServices.Start();
 
             if (!isReconnect)
